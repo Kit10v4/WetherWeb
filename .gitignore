@@ -1,0 +1,14 @@
+# ⚠️ QUAN TRỌNG: Không commit API key lên GitHub
+config.js
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

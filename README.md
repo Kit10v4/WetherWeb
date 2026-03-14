@@ -1,0 +1,48 @@
+# ⛅ WeatherPro — Ứng dụng Dự báo Thời tiết
+
+Đồ án cuối kỳ môn **Lập trình Web** · 2025
+
+## 🚀 Hướng dẫn chạy
+
+1. **Đăng ký API key** tại [openweathermap.org](https://openweathermap.org) (miễn phí)
+2. Mở file `config.js`, thay `YOUR_API_KEY_HERE` bằng key của bạn
+3. Mở `index.html` bằng trình duyệt (hoặc dùng Live Server trong VS Code)
+
+> ⚠️ API key cần ~2 giờ để kích hoạt sau khi đăng ký
+
+## 📁 Cấu trúc
+
+```
+weatherpro/
+├── index.html          ← Giao diện chính
+├── config.js           ← API key (không commit!)
+├── css/style.css       ← Custom CSS + animations
+├── js/
+│   ├── app.js          ← Entry point
+│   ├── api.js          ← Fetch OpenWeatherMap
+│   ├── utils.js        ← Helper functions
+│   ├── storage.js      ← localStorage
+│   ├── chart.js        ← Biểu đồ Canvas
+│   └── ui/
+│       ├── current.js  ← Render thời tiết hiện tại
+│       ├── forecast.js ← Render dự báo 5 ngày
+│       └── components.js ← Toast, spinner, dropdown
+└── assets/
+    └── images/hero-bg.jpg
+```
+
+## ✨ Tính năng
+
+- 🔍 Tìm kiếm thời tiết theo tên thành phố
+- 📍 Định vị GPS tự động
+- 📅 Dự báo 5 ngày với biểu đồ nhiệt độ
+- 🌡 Toggle °C / °F
+- 🕐 Lịch sử tìm kiếm (localStorage)
+- 🌙 Dark mode
+- 📱 Responsive (Mobile / Tablet / Desktop)
+
+## 🛠 Công nghệ
+
+- HTML5 · Tailwind CSS · Vanilla JavaScript ES6+
+- OpenWeatherMap API
+- HTML5 Canvas API

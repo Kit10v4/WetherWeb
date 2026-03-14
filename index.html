@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="WeatherPro — Ứng dụng tra cứu thời tiết chuyên nghiệp" />
+  <title>WeatherPro ⛅ Dự báo Thời tiết</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Tailwind Config (màu corporate) -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy:      "#1A3A5C",
+            corporate: "#2E6DA4",
+            sky:       "#0099CC",
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="min-h-screen" style="background-color: var(--bg)">
+
+  <!-- ══════════════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════════════ -->
+  <header class="bg-navy sticky top-0 z-40 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+
+      <!-- Logo + tên ứng dụng -->
+      <a href="#" class="flex items-center gap-2 text-white font-bold text-xl tracking-tight no-underline">
+        <span class="text-2xl">⛅</span>
+        <span>WeatherPro</span>
+      </a>
+
+      <!-- Controls bên phải -->
+      <div class="flex items-center gap-3">
+
+        <!-- Toggle đơn vị nhiệt độ -->
+        <div class="flex items-center bg-white/10 rounded-lg p-1 gap-0.5">
+          <button id="btn-unit-c" class="unit-btn unit-active">°C</button>
+          <span class="text-white/30 text-xs">|</span>
+          <button id="btn-unit-f" class="unit-btn">°F</button>
+        </div>
+
+        <!-- Toggle dark/light mode -->
+        <button id="btn-theme"
+                class="text-white/80 hover:text-white text-xl w-9 h-9 rounded-lg
+                       hover:bg-white/10 transition-all flex items-center justify-center"
+                title="Đổi giao diện">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════
+       HERO — Search Section
+  ══════════════════════════════════════════════════════════ -->
+  <section class="hero-section py-14 px-4">
+    <div class="relative z-10 max-w-2xl mx-auto text-center">
+
+      <h1 class="text-white text-3xl md:text-4xl font-bold mb-2 drop-shadow">
+        Tra cứu Thời tiết
+      </h1>
+      <p class="text-white/75 text-sm mb-8">
+        Thông tin thời tiết chính xác, cập nhật theo thời gian thực
+      </p>
+
+      <!-- Search Form -->
+      <div id="search-wrapper" class="relative mx-auto max-w-xl">
+        <div class="flex gap-2">
+          <!-- Input tìm kiếm -->
+          <div class="flex-1 relative">
+            <input
+              id="search-input"
+              type="text"
+              class="search-input w-full rounded-xl px-4 py-3.5 text-gray-800
+                     bg-white text-sm shadow-lg placeholder-gray-400"
+              placeholder="Nhập tên thành phố... (VD: Hà Nội, Singapore)"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <!-- Nút Tìm kiếm -->
+          <button
+            id="btn-search"
+            class="bg-sky hover:bg-corporate text-white px-5 rounded-xl
+                   shadow-lg font-semibold text-sm transition-all duration-200
+                   flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <span id="search-icon">🔍</span>
+            <span class="hidden sm:inline">Tìm</span>
+            <!-- Spinner (ẩn mặc định) -->
+            <span id="search-spinner" class="spinner hidden"></span>
+          </button>
+
+          <!-- Nút Vị trí GPS -->
+          <button
+            id="btn-location"
+            class="bg-white/20 hover:bg-white/35 text-white px-3.5 rounded-xl
+                   shadow-lg transition-all duration-200 text-lg"
+            title="Dùng vị trí của tôi"
+          >
+            📍
+          </button>
+        </div>
+
+        <!-- Lỗi validation inline -->
+        <p id="search-error" class="search-error hidden text-left pl-1 mt-1"></p>
+
+        <!-- Dropdown lịch sử tìm kiếm -->
+        <div id="history-dropdown" class="hidden"></div>
+      </div>
+
+      <!-- Thành phố gợi ý -->
+      <div class="mt-5">
+        <p class="text-white/50 text-xs mb-2">Tìm kiếm nhanh:</p>
+        <div id="suggested-cities" class="flex flex-wrap justify-center gap-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════════════════════════ -->
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- ── Khu vực kết quả (ẩn khi chưa tìm kiếm) ───────────── -->
+    <div id="result-section" class="hidden space-y-6">
+
+      <!-- ── Current Weather Card ──────────────────────────── -->
+      <section id="current-section" class="hidden fade-in">
+        <div class="weather-card p-6 md:p-8">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
+            <!-- Cột trái: Thông tin chính -->
+            <div>
+              <div class="flex items-baseline gap-1 mb-1">
+                <h2 id="city-name" class="text-2xl md:text-3xl font-bold text-navy"></h2>
+                <span id="country-flag" class="text-gray-400 font-medium"></span>
+              </div>
+              <p id="current-datetime" class="text-gray-400 text-sm mb-4"></p>
+
+              <div class="flex items-center gap-4">
+                <span id="current-temp" class="font-bold text-navy leading-none"></span>
+                <div>
+                  <p id="weather-desc" class="text-gray-600 font-medium capitalize"></p>
+                  <p id="feels-like"   class="text-gray-400 text-sm mt-0.5"></p>
+                  <p id="temp-range"   class="text-gray-400 text-sm"></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cột phải: Icon thời tiết -->
+            <div class="flex flex-col items-center">
+              <img id="weather-icon"
+                   src="" alt="weather icon"
+                   class="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Details Grid (6 thẻ) ──────────────────────── -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+
+          <div class="detail-card fade-in" style="animation-delay:0.05s">
+            <div class="detail-icon">💧</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Độ ẩm</p>
+              <p id="detail-humidity" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+          <div class="detail-card fade-in" style="animation-delay:0.10s">
+            <div class="detail-icon">💨</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Tốc độ gió</p>
+              <p id="detail-wind" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+          <div class="detail-card fade-in" style="animation-delay:0.15s">
+            <div class="detail-icon">👁</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Tầm nhìn</p>
+              <p id="detail-visibility" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+          <div class="detail-card fade-in" style="animation-delay:0.20s">
+            <div class="detail-icon">🌡</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Áp suất</p>
+              <p id="detail-pressure" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+          <div class="detail-card fade-in" style="animation-delay:0.25s">
+            <div class="detail-icon">🌅</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Mặt trời mọc</p>
+              <p id="detail-sunrise" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+          <div class="detail-card fade-in" style="animation-delay:0.30s">
+            <div class="detail-icon">🌇</div>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Mặt trời lặn</p>
+              <p id="detail-sunset" class="font-semibold text-navy text-lg"></p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── 5-Day Forecast ─────────────────────────────────── -->
+      <section id="forecast-section" class="hidden fade-in">
+        <h3 class="text-navy font-semibold text-lg mb-3">📅 Dự báo 5 ngày</h3>
+
+        <!-- Forecast cards (scroll ngang trên mobile) -->
+        <div id="forecast-cards"
+             class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory
+                    scrollbar-thin scrollbar-thumb-blue-200">
+        </div>
+
+        <!-- Biểu đồ nhiệt độ -->
+        <div class="chart-container mt-4">
+          <p class="text-sm font-semibold text-gray-500 mb-3">📈 Biểu đồ nhiệt độ 5 ngày</p>
+          <canvas id="temp-chart"></canvas>
+        </div>
+      </section>
+
+    </div>
+    <!-- ── End result-section ──────────────────────────────────── -->
+
+    <!-- ── Trạng thái rỗng ban đầu (hiện trước khi tìm kiếm) ── -->
+    <div id="empty-state" class="flex flex-col items-center justify-center py-20 text-center">
+      <div class="text-7xl mb-4">🌤</div>
+      <h3 class="text-xl font-semibold text-gray-500 mb-2">Chào mừng đến WeatherPro</h3>
+      <p class="text-gray-400 text-sm max-w-xs">
+        Nhập tên thành phố vào ô tìm kiếm phía trên để xem dự báo thời tiết
+      </p>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════════════ -->
+  <footer class="bg-navy mt-12 py-6 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center
+                justify-between gap-3 text-white/60 text-sm">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">⛅</span>
+        <span class="font-semibold text-white">WeatherPro</span>
+        <span>— Đồ án môn Lập trình Web · 2025</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span>Dữ liệu:</span>
+        <a href="https://openweathermap.org" target="_blank" rel="noopener"
+           class="text-sky hover:text-white transition-colors">
+          OpenWeatherMap API
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOAST NOTIFICATION
+  ══════════════════════════════════════════════════════════ -->
+  <div id="toast" class="toast" role="alert" aria-live="polite">
+    <span class="toast__icon text-lg"></span>
+    <span class="toast__message"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SCRIPTS (thứ tự quan trọng!)
+  ══════════════════════════════════════════════════════════ -->
+  <script src="config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/ui/components.js"></script>
+  <script src="js/ui/current.js"></script>
+  <script src="js/ui/forecast.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Script ẩn empty-state khi có kết quả -->
+  <script>
+    const _origSearch = App.searchCity;
+    // Ẩn empty state ngay khi bắt đầu tìm kiếm
+    document.getElementById("btn-search").addEventListener("click", () => {
+      document.getElementById("empty-state").classList.add("hidden");
+      document.getElementById("result-section").classList.remove("hidden");
+    });
+    document.getElementById("search-input").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        document.getElementById("empty-state").classList.add("hidden");
+        document.getElementById("result-section").classList.remove("hidden");
+      }
+    });
+  </script>
+
+</body>
+</html>
