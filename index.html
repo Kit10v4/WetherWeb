@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="WeatherPro — Ứng dụng tra cứu thời tiết chuyên nghiệp" />
-  <title>WeatherPro ⛅ Dự báo Thời tiết</title>
-
+  <meta name="description" content="WeatherWeb — Ứng dụng tra cứu thời tiết chuyên nghiệp" />
+  <title>WeatherWeb ⛅ Dự báo Thời tiết</title>
+  <!-- Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Custom CSS -->
@@ -241,7 +243,21 @@
           <canvas id="temp-chart"></canvas>
         </div>
       </section>
+      <section id="map-section" class="hidden fade-in">
+        <h3 class="text-navy font-semibold text-lg mb-3">🗺 Bản đồ thời tiết</h3>
 
+        <!-- Toggle chọn lớp -->
+        <div class="flex gap-2 mb-3 flex-wrap">
+          <button class="map-layer-btn active" data-layer="precipitation_new">🌧 Mưa</button>
+          <button class="map-layer-btn" data-layer="clouds_new">☁️ Mây</button>
+          <button class="map-layer-btn" data-layer="temp_new">🌡 Nhiệt độ</button>
+          <button class="map-layer-btn" data-layer="wind_new">💨 Gió</button>
+          <button class="map-layer-btn" data-layer="pressure_new">📊 Áp suất</button>
+        </div>
+
+        <div id="weather-map" class="rounded-2xl overflow-hidden shadow-md"
+            style="height: 420px;"></div>
+      </section>
     </div>
     <!-- ── End result-section ──────────────────────────────────── -->
 
@@ -297,7 +313,7 @@
   <script src="js/ui/current.js"></script>
   <script src="js/ui/forecast.js"></script>
   <script src="js/app.js"></script>
-
+  <script src="js/map.js"></script>
   <!-- Script ẩn empty-state khi có kết quả -->
   <script>
     const _origSearch = App.searchCity;

@@ -47,6 +47,11 @@ const App = (() => {
 
     Components.clearInputError();
     Components.hideHistoryDropdown();
+
+    // Hiện khu vực kết quả ngay khi bắt đầu tìm (kể cả auto-load từ history)
+    document.getElementById("empty-state")?.classList.add("hidden");
+    document.getElementById("result-section")?.classList.remove("hidden");
+
     Components.showLoading();
 
     try {
@@ -77,7 +82,13 @@ const App = (() => {
 
       CurrentUI.render(weatherData, currentUnit);
       ForecastUI.render(forecastData, currentUnit);
-
+      // Lấy tọa độ từ dữ liệu API rồi hiện bản đồ
+      WeatherMap.flyToCity(
+        weatherData.coord?.lat,
+        weatherData.coord?.lon,
+        weatherData.name,
+        weatherData
+      );
       Storage.addToHistory(trimmed);
 
     } catch (err) {
@@ -109,8 +120,16 @@ const App = (() => {
             Api.getWeatherByCoords(coords.latitude, coords.longitude),
             Api.getForecastByCoords(coords.latitude, coords.longitude),
           ]);
+          document.getElementById("empty-state")?.classList.add("hidden");
+          document.getElementById("result-section")?.classList.remove("hidden");
           CurrentUI.render(weatherData, currentUnit);
           ForecastUI.render(forecastData, currentUnit);
+          WeatherMap.flyToCity(
+            weatherData.coord?.lat,
+            weatherData.coord?.lon,
+            weatherData.name,
+            weatherData
+          );
           Storage.addToHistory(weatherData.name);
         } catch (err) {
           Components.showResultError(err.message);
