@@ -1,6 +1,6 @@
 # ⛅ WeatherPro — Ứng dụng Dự báo Thời tiết
 
-Đồ án cuối kỳ môn **Lập trình Web** · 2025
+WeatherPro là một ứng dụng web dự báo thời tiết hiện đại, sử dụng OpenWeatherMap API để cung cấp thông tin thời tiết chính xác và chi tiết. Với giao diện thân thiện, tính năng đa dạng và hiệu suất tối ưu, WeatherPro giúp bạn dễ dàng theo dõi thời tiết ở bất kỳ đâu.
 
 ## 🚀 Hướng dẫn chạy
 
