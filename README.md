@@ -2,11 +2,9 @@
 
 WeatherWeb là một ứng dụng web dự báo thời tiết hiện đại, sử dụng OpenWeatherMap API để cung cấp thông tin thời tiết chính xác và chi tiết. Với giao diện thân thiện, tính năng đa dạng và hiệu suất tối ưu, WeatherWeb giúp bạn dễ dàng theo dõi thời tiết ở bất kỳ đâu.
 
-## 🚀 Hướng dẫn chạy
+## 🚀 WEB
 
-1. **Đăng ký API key** tại [openweathermap.org](https://openweathermap.org) (miễn phí)
-2. Mở file `config.js`, thay `YOUR_API_KEY_HERE` bằng key của bạn
-3. Mở `index.html` bằng trình duyệt (hoặc dùng Live Server trong VS Code)
+weatherbasic.vercel.app
 
 > ⚠️ API key cần ~2 giờ để kích hoạt sau khi đăng ký
 
