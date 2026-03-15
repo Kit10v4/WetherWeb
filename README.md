@@ -42,3 +42,4 @@ weatherpro/
 - HTML5 · Tailwind CSS · Vanilla JavaScript ES6+
 - OpenWeatherMap API
 - HTML5 Canvas API
+- Leaflet.js (bản đồ)
