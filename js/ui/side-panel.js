@@ -50,31 +50,33 @@ const SidePanel = (() => {
   }
 
   function _uvCard(uv) {
-    if (!Number.isFinite(uv)) return { label: "--", desc: "Không có dữ liệu UV", level: "unknown" };
-    if (uv < 3) return { label: `${uv.toFixed(1)} • Tốt`, desc: "An toàn cho hoạt động ngoài trời.", level: "good" };
-    if (uv < 6) return { label: `${uv.toFixed(1)} • Trung bình`, desc: "Nên chống nắng khi ra ngoài.", level: "warning" };
-    if (uv < 8) return { label: `${uv.toFixed(1)} • Cao`, desc: "Hạn chế ra nắng lâu, dùng kem chống nắng.", level: "danger" };
-    if (uv < 11) return { label: `${uv.toFixed(1)} • Rất cao`, desc: "Tránh nắng trực tiếp vào buổi trưa.", level: "danger" };
-    return { label: `${uv.toFixed(1)} • Cực cao`, desc: "Nguy cơ cháy nắng rất nhanh, nên ở trong nhà.", level: "danger" };
+    if (!Number.isFinite(uv)) return { label: "--", desc: "Không có dữ liệu UV", level: "unknown", progress: 0, icon: "🌫" };
+    if (uv < 3) return { label: `${uv.toFixed(1)} • Tốt`, desc: "An toàn cho hoạt động ngoài trời.", level: "good", progress: (uv / 12) * 100, icon: "🟢" };
+    if (uv < 6) return { label: `${uv.toFixed(1)} • Trung bình`, desc: "Nên chống nắng khi ra ngoài.", level: "warning", progress: (uv / 12) * 100, icon: "🧴" };
+    if (uv < 8) return { label: `${uv.toFixed(1)} • Cao`, desc: "Hạn chế ra nắng lâu, dùng kem chống nắng.", level: "danger", progress: (uv / 12) * 100, icon: "☀️" };
+    if (uv < 11) return { label: `${uv.toFixed(1)} • Rất cao`, desc: "Tránh nắng trực tiếp vào buổi trưa.", level: "danger", progress: (uv / 12) * 100, icon: "🔥" };
+    return { label: `${uv.toFixed(1)} • Cực cao`, desc: "Nguy cơ cháy nắng rất nhanh, nên ở trong nhà.", level: "danger", progress: 100, icon: "🚨" };
   }
 
   function _rainCard(precipitationNow, rainProbability) {
     const hasPrecip = Number.isFinite(precipitationNow);
     const prob = Number.isFinite(rainProbability) ? Math.round(rainProbability) : null;
     if (hasPrecip && precipitationNow > 0.2) {
-      return {
-        label: `${precipitationNow.toFixed(1)} mm/h • Có mưa`,
-        desc: prob == null ? "Đang ghi nhận mưa hiện tại." : `Đang có mưa, xác suất ${prob}% trong giờ này.`,
-        level: "danger",
-      };
-    }
+        return {
+          label: `${precipitationNow.toFixed(1)} mm/h • Có mưa`,
+          desc: prob == null ? "Đang ghi nhận mưa hiện tại." : `Đang có mưa, xác suất ${prob}% trong giờ này.`,
+          level: "danger",
+          progress: Math.min(100, precipitationNow * 15),
+          icon: "🌧",
+        };
+      }
     if (prob != null && prob >= 60) {
-      return { label: `${prob}% • Dễ mưa`, desc: "Hiện tại chưa mưa rõ, nhưng khả năng mưa cao.", level: "warning" };
+      return { label: `${prob}% • Dễ mưa`, desc: "Hiện tại chưa mưa rõ, nhưng khả năng mưa cao.", level: "warning", progress: prob, icon: "🌦" };
     }
     if (prob != null) {
-      return { label: "Không mưa", desc: `Xác suất mưa giờ này khoảng ${prob}%.`, level: "good" };
+      return { label: "Không mưa", desc: `Xác suất mưa giờ này khoảng ${prob}%.`, level: "good", progress: prob, icon: "☁️" };
     }
-    return { label: "Không mưa", desc: "Không có dữ liệu xác suất mưa.", level: "unknown" };
+    return { label: "Không mưa", desc: "Không có dữ liệu xác suất mưa.", level: "unknown", progress: 0, icon: "🌫" };
   }
 
   function _airCard(visibility, cloudCover, pm25, pm10, ozone) {
@@ -91,23 +93,27 @@ const SidePanel = (() => {
         ozoneValid ? `O₃ ${ozone.toFixed(1)}` : "O₃ --",
       ];
       const label = level === "good" ? "Tốt" : level === "warning" ? "Trung bình" : "Kém";
-      return { label, desc: parts.join(" • "), level };
+      const score = (pm25Valid ? Math.min(50, pm25 * 1.6) : 0) + (pm10Valid ? Math.min(35, pm10 * 0.5) : 0) + (ozoneValid ? Math.min(35, ozone * 0.25) : 0);
+      return { label, desc: parts.join(" • "), level, progress: Math.min(100, score), icon: level === "good" ? "🫁" : level === "warning" ? "😷" : "⚠️" };
     }
-    if (!Number.isFinite(visibility)) return { label: "--", desc: "Không có dữ liệu không khí", level: "unknown" };
+    if (!Number.isFinite(visibility)) return { label: "--", desc: "Không có dữ liệu không khí", level: "unknown", progress: 0, icon: "🌫" };
     const visibilityKm = visibility / 1000;
     const cloudText = Number.isFinite(cloudCover) ? `Mây ${Math.round(cloudCover)}%` : "Mây --";
-    if (visibilityKm >= 10) return { label: "Tốt", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "good" };
-    if (visibilityKm >= 5) return { label: "Trung bình", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "warning" };
-    return { label: "Kém", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "danger" };
+    if (visibilityKm >= 10) return { label: "Tốt", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "good", progress: 25, icon: "🫁" };
+    if (visibilityKm >= 5) return { label: "Trung bình", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "warning", progress: 55, icon: "😷" };
+    return { label: "Kém", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "danger", progress: 85, icon: "⚠️" };
   }
 
   function _setMetricCard(type, info) {
     const card = document.getElementById(`sp-${type}-card`);
     const valueEl = document.getElementById(`sp-${type}-value`);
     const descEl = document.getElementById(`sp-${type}-desc`);
+    const progressEl = document.getElementById(`sp-${type}-progress`);
     if (!card || !valueEl || !descEl) return;
-    valueEl.textContent = info.label;
+    valueEl.textContent = `${info.icon ? `${info.icon} ` : ""}${info.label}`;
     descEl.textContent = info.desc;
+    if (progressEl) progressEl.style.width = `${Math.max(0, Math.min(100, Number(info.progress) || 0))}%`;
+    card.setAttribute("aria-label", `${type.toUpperCase()}: ${info.label}. ${info.desc}`);
     card.classList.remove("sp-env-good", "sp-env-warning", "sp-env-danger", "sp-env-unknown");
     card.classList.add(
       info.level === "good"
@@ -254,16 +260,19 @@ const SidePanel = (() => {
         <div class="sp-env-card" id="sp-uv-card">
           <div class="sp-env-title">UV hiện tại</div>
           <div class="sp-env-value" id="sp-uv-value">--</div>
+          <div class="sp-env-progress"><span id="sp-uv-progress"></span></div>
           <div class="sp-env-desc" id="sp-uv-desc">Đang tải dữ liệu...</div>
         </div>
         <div class="sp-env-card" id="sp-rain-card">
           <div class="sp-env-title">Mưa hiện tại</div>
           <div class="sp-env-value" id="sp-rain-value">--</div>
+          <div class="sp-env-progress"><span id="sp-rain-progress"></span></div>
           <div class="sp-env-desc" id="sp-rain-desc">Đang tải dữ liệu...</div>
         </div>
         <div class="sp-env-card" id="sp-air-card">
           <div class="sp-env-title">Không khí</div>
           <div class="sp-env-value" id="sp-air-value">--</div>
+          <div class="sp-env-progress"><span id="sp-air-progress"></span></div>
           <div class="sp-env-desc" id="sp-air-desc">Đang tải dữ liệu...</div>
         </div>
       </div>

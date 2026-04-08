@@ -2,6 +2,7 @@ const App = (() => {
   let currentUnit = "C";
   let lastWeatherData = null;
   let lastForecastData = null;
+  let lastSearchMeta = null;
   let _activeRequestId = 0;
 
   function init() {
@@ -47,6 +48,7 @@ const App = (() => {
       }
       if (requestId !== _activeRequestId) return;
       _onDataLoaded(weatherData, forecastData, city);
+      lastSearchMeta = { type: "city", city: apiCity };
     } catch (err) {
       if (requestId !== _activeRequestId) return;
       _handleError(err);
@@ -80,6 +82,7 @@ const App = (() => {
       }
       if (requestId !== _activeRequestId) return;
       _onDataLoaded(weatherData, forecastData, name || weatherData.name);
+      lastSearchMeta = { type: "coords", lat, lon, name: name || weatherData.name };
     } catch (err) {
       if (requestId !== _activeRequestId) return;
       _handleError(err);
@@ -172,6 +175,7 @@ const App = (() => {
       if (!e.target.closest("#search-wrapper")) Components.hideHistoryDropdown();
     });
     document.getElementById("btn-location")?.addEventListener("click", searchByLocation);
+    document.getElementById("btn-refresh")?.addEventListener("click", _refreshCurrentWeather);
     document.getElementById("btn-unit-c")?.addEventListener("click", () => {
       if (currentUnit !== "C") _toggleUnit();
     });
@@ -205,6 +209,25 @@ const App = (() => {
         Components.showToast("Không thể lấy vị trí. Hãy bật quyền GPS rồi thử lại.", "error");
       }
     );
+  }
+
+  async function _refreshCurrentWeather() {
+    if (!lastSearchMeta) {
+      Components.showToast("Chưa có dữ liệu để làm mới.", "info");
+      return;
+    }
+    if (lastSearchMeta.type === "city") {
+      const cacheKey = `${lastSearchMeta.city.toLowerCase()}_${currentUnit}`;
+      Storage.removeCachedWeather(cacheKey);
+      await searchCity(lastSearchMeta.city);
+      return;
+    }
+    if (lastSearchMeta.type === "coords") {
+      const coordKey = `${Number(lastSearchMeta.lat).toFixed(3)}_${Number(lastSearchMeta.lon).toFixed(3)}_${currentUnit}`;
+      Storage.removeCachedWeather(coordKey);
+      await searchByCoords(lastSearchMeta.lat, lastSearchMeta.lon, lastSearchMeta.name);
+      return;
+    }
   }
 
   function _generateLocalAlerts(weatherData) {

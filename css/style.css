@@ -108,6 +108,7 @@ body {
 
 #btn-search,
 #btn-location,
+#btn-refresh,
 #btn-theme {
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -129,6 +130,7 @@ body {
 }
 
 #btn-location:hover,
+#btn-refresh:hover,
 #btn-theme:hover {
   background: rgba(255, 255, 255, 0.24);
 }
@@ -514,6 +516,35 @@ body {
   color: rgba(255, 255, 255, 0.84);
 }
 
+.sp-env-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  margin: 0.2rem 0 0.35rem;
+}
+
+.sp-env-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.95), rgba(14, 165, 233, 0.9));
+  transition: width 0.25s ease;
+}
+
+.sp-env-warning .sp-env-progress > span {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.92));
+}
+
+.sp-env-danger .sp-env-progress > span {
+  background: linear-gradient(90deg, rgba(248, 113, 113, 0.95), rgba(239, 68, 68, 0.9));
+}
+
+.sp-env-unknown .sp-env-progress > span {
+  background: rgba(148, 163, 184, 0.65);
+}
+
 .sp-env-good {
   background: rgba(34, 197, 94, 0.16);
   border-color: rgba(74, 222, 128, 0.34);
@@ -883,6 +914,7 @@ body {
 
   #btn-search,
   #btn-location,
+  #btn-refresh,
   #btn-theme {
     height: 34px;
     padding: 0 0.5rem;

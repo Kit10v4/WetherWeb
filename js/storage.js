@@ -124,6 +124,11 @@ function setCachedWeather(city, data) {
     data
   }));
 }
+
+function removeCachedWeather(city) {
+  const key = `weatherpro_cache_${city.toLowerCase()}`;
+  localStorage.removeItem(key);
+}
   return {
     getHistory,
     addToHistory,
@@ -134,7 +139,8 @@ function setCachedWeather(city, data) {
     getTheme,
     setTheme,
     getCachedWeather,
-    setCachedWeather
+    setCachedWeather,
+    removeCachedWeather
   };
   
 })();
