@@ -301,6 +301,26 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.autocomplete-item.is-active,
+.autocomplete-item:focus-visible {
+  background: rgba(0, 153, 204, 0.24);
+  outline: 1px solid rgba(0, 153, 204, 0.45);
+}
+
+.ac-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ac-name {
+  font-weight: 600;
+}
+
+.ac-country {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .history-city {
   flex: 1;
   overflow: hidden;
@@ -467,6 +487,43 @@ body {
 .sp-coming-soon {
   color: rgba(255, 255, 255, 0.35);
   text-align: center;
+}
+
+.sp-adv-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.45rem;
+}
+
+.sp-adv-title {
+  font-size: 0.82rem;
+}
+
+.sp-adv-msg {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.sp-adv-good {
+  background: rgba(37, 161, 84, 0.18);
+}
+
+.sp-adv-moderate {
+  background: rgba(207, 152, 24, 0.18);
+}
+
+.sp-adv-high {
+  background: rgba(211, 112, 29, 0.2);
+}
+
+.sp-adv-danger {
+  background: rgba(170, 42, 42, 0.24);
+}
+
+.sp-adv-muted {
+  background: rgba(120, 130, 140, 0.18);
 }
 
 .sp-header-actions {

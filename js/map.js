@@ -39,8 +39,7 @@ const WeatherMap = (() => {
     _map.on("click", async e => {
       try {
         const { lat, lng } = e.latlng;
-        const weatherData = await Api.getWeatherByCoords(lat, lng, Storage.getUnit());
-        App.searchByCoords(lat, lng, weatherData.name);
+        App.searchByCoords(lat, lng);
       } catch {
         Components.showToast("Không lấy được dữ liệu tại vị trí này", "error");
       }
