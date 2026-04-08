@@ -32,7 +32,7 @@ weatherpro/
 |       |-- side-panel.js
 |       |-- timeline.js
 |       `-- search-autocomplete.js
-|-- config.js
+|-- js/config.client.js
 |-- index.html
 |-- vercel.json
 `-- .env.example

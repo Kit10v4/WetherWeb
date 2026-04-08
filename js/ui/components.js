@@ -156,7 +156,7 @@ const Components = (() => {
 
     const messages = {
       "404":     { icon: "🔍", title: "Không tìm thấy thành phố", sub: "Kiểm tra lại chính tả hoặc thử tên tiếng Anh (VD: Ho Chi Minh City)" },
-      "401":     { icon: "🔑", title: "API key không hợp lệ",     sub: "Kiểm tra lại config.js — API key đúng chưa và đã kích hoạt chưa?" },
+      "401":     { icon: "🔑", title: "API key không hợp lệ",     sub: "Kiểm tra biến môi trường OWM_API_KEY trên Vercel." },
       "429":     { icon: "⏱",  title: "Quá nhiều yêu cầu",        sub: "Vui lòng chờ vài phút rồi thử lại" },
       "network": { icon: "📡", title: "Lỗi kết nối mạng",         sub: "Kiểm tra kết nối internet của bạn rồi thử lại" },
       "default": { icon: "⚠️", title: "Đã xảy ra lỗi",            sub: "Vui lòng thử lại sau ít phút" },
