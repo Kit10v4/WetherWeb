@@ -4,7 +4,7 @@ const SidePanel = (() => {
   let _forecastData = null;
   let _lastWeatherData = null;
   let _lastUnit = "C";
-  let _lastAdvanced = null;
+  let _lastMetricsRequestId = 0;
 
   function _getUvLevel(uv) {
     if (uv == null || Number.isNaN(uv)) return { level: "Không rõ", color: "muted", icon: "❔", msg: "Chưa có dữ liệu UV" };
@@ -27,20 +27,37 @@ const SidePanel = (() => {
   function _renderAdvancedMetrics(lat, lon) {
     const target = document.getElementById("sp-advanced-metrics");
     if (!target) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      target.innerHTML = `<p class="sp-coming-soon">Không có tọa độ để tải chỉ số UV & Không khí.</p>`;
+      return;
+    }
+    const reqId = ++_lastMetricsRequestId;
     target.innerHTML = `<p class="sp-coming-soon">Đang tải dữ liệu UV & Không khí...</p>`;
     OpenMeteoApi.getAdvancedMetrics(lat, lon)
       .then(data => {
-        _lastAdvanced = data;
+        if (reqId !== _lastMetricsRequestId) return;
         const uv = data?.hourly?.uv_index?.[0];
         const visibilityM = data?.hourly?.visibility?.[0];
+        const rainProb = data?.hourly?.precipitation_probability?.[0];
         const cloud = data?.hourly?.cloudcover?.[0] ?? 0;
         const visibilityKm = visibilityM ? visibilityM / 1000 : 0;
         const uvState = _getUvLevel(uv);
         const airState = _getAirProxyLevel(visibilityKm, cloud);
+        const rainState = rainProb == null
+          ? { level: "Không rõ", color: "muted", icon: "☔", msg: "Chưa có dữ liệu mưa." }
+          : rainProb < 30
+            ? { level: "Thấp", color: "good", icon: "🌤", msg: "Xác suất mưa thấp." }
+            : rainProb < 70
+              ? { level: "Trung bình", color: "moderate", icon: "🌦", msg: "Nên mang theo áo mưa dự phòng." }
+              : { level: "Cao", color: "danger", icon: "🌧", msg: "Khả năng mưa cao, nên chuẩn bị áo mưa." };
         target.innerHTML = `
           <div class="sp-adv-card sp-adv-${uvState.color}">
             <div class="sp-adv-title">${uvState.icon} UV: <strong>${uv == null ? "--" : uv.toFixed(1)}</strong> · ${uvState.level}</div>
             <p class="sp-adv-msg">${uvState.msg}</p>
+          </div>
+          <div class="sp-adv-card sp-adv-${rainState.color}">
+            <div class="sp-adv-title">${rainState.icon} Mưa: <strong>${rainProb == null ? "--" : `${Math.round(rainProb)}%`}</strong> · ${rainState.level}</div>
+            <p class="sp-adv-msg">${rainState.msg}</p>
           </div>
           <div class="sp-adv-card sp-adv-${airState.color}">
             <div class="sp-adv-title">${airState.icon} Không khí: <strong>${airState.level}</strong></div>
@@ -49,6 +66,7 @@ const SidePanel = (() => {
         `;
       })
       .catch(() => {
+        if (reqId !== _lastMetricsRequestId) return;
         target.innerHTML = `<p class="sp-coming-soon">Không tải được UV/Không khí. Vui lòng thử lại.</p>`;
       });
   }

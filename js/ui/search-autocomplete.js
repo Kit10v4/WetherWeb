@@ -4,6 +4,7 @@ const SearchAutocomplete = (() => {
   let _activeIndex = -1;
   let _inputEl = null;
   let _onSelectCb = null;
+  let _queryToken = 0;
 
   function init(inputEl, onSelect) {
     if (!inputEl) return;
@@ -26,6 +27,7 @@ const SearchAutocomplete = (() => {
   }
 
   async function _fetchSuggestions(q, onSelect) {
+    const token = ++_queryToken;
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=5`);
       if (!res.ok) {
@@ -33,6 +35,7 @@ const SearchAutocomplete = (() => {
         return;
       }
       const data = await res.json();
+      if (token !== _queryToken) return;
       _results = data;
       _activeIndex = -1;
       _renderDropdown(data, onSelect);
@@ -108,6 +111,7 @@ const SearchAutocomplete = (() => {
   function _updateActive(items) {
     items.forEach((el, idx) => {
       el.classList.toggle("is-active", idx === _activeIndex);
+      el.setAttribute("aria-selected", idx === _activeIndex ? "true" : "false");
       if (idx === _activeIndex) el.scrollIntoView({ block: "nearest" });
     });
   }

@@ -110,14 +110,14 @@ const App = (() => {
     const isNetwork = !navigator.onLine || code === "network";
     const isTimeout = code === "timeout";
     const message = isNetwork
-      ? "Mất kết nối internet. Vui lòng kiểm tra mạng."
+      ? "Mất kết nối internet. Kiểm tra mạng rồi thử lại."
       : isTimeout
-        ? "Kết nối chậm. Vui lòng thử lại."
+        ? "Kết nối chậm. Vui lòng thử lại sau ít giây."
         : code === "404"
-          ? "Không tìm thấy thành phố."
+          ? "Không tìm thấy thành phố. Hãy kiểm tra chính tả."
           : code === "429"
-            ? "Đang có nhiều yêu cầu. Vui lòng thử lại sau."
-            : "Không thể tải dữ liệu thời tiết.";
+            ? "Bạn thao tác quá nhanh. Vui lòng thử lại sau."
+            : "Không thể tải dữ liệu thời tiết. Vui lòng thử lại.";
     Components.showToast(message, "error");
   }
 
@@ -157,6 +157,7 @@ const App = (() => {
     const searchInput = document.getElementById("search-input");
     document.getElementById("btn-search")?.addEventListener("click", () => searchCity(searchInput.value));
     searchInput?.addEventListener("keydown", e => {
+      if (e.defaultPrevented) return;
       if (e.key === "Enter") searchCity(searchInput.value);
       if (e.key === "Escape") Components.hideHistoryDropdown();
     });
@@ -201,7 +202,7 @@ const App = (() => {
       },
       () => {
         Components.hideLoading();
-        Components.showToast("Không thể lấy vị trí. Vui lòng cho phép GPS", "error");
+        Components.showToast("Không thể lấy vị trí. Hãy bật quyền GPS rồi thử lại.", "error");
       }
     );
   }
