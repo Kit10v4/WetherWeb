@@ -4,71 +4,148 @@ const SidePanel = (() => {
   let _forecastData = null;
   let _lastWeatherData = null;
   let _lastUnit = "C";
-  let _metricsReqToken = 0;
   let _lastMetricsRequestId = 0;
 
-  function _getUvLevel(uv) {
-    if (uv == null || Number.isNaN(uv)) return { level: "Không rõ", color: "muted", icon: "❔", msg: "Chưa có dữ liệu UV" };
-    if (uv <= 2) return { level: "Tốt", color: "good", icon: "🟢", msg: "An toàn cho hoạt động ngoài trời." };
-    if (uv <= 5) return { level: "Trung bình", color: "moderate", icon: "🟡", msg: "Nên bôi kem chống nắng khi ra ngoài lâu." };
-    if (uv <= 7) return { level: "Cao", color: "high", icon: "🟠", msg: "Hạn chế nắng gắt 10h-16h, nên đội mũ." };
-    return { level: "Rất cao", color: "danger", icon: "🔴", msg: "Tránh nắng trực tiếp, ưu tiên ở trong nhà." };
+  function _pickNumber(...values) {
+    for (const v of values) {
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
   }
 
-  function _getAirProxyLevel(visibilityKm, cloudcover) {
-    if (visibilityKm >= 10 && cloudcover < 60) {
-      return { level: "Tốt", color: "good", icon: "🟢", msg: "Không khí tương đối trong lành." };
-    }
-    if (visibilityKm >= 6) {
-      return { level: "Trung bình", color: "moderate", icon: "🟡", msg: "Chấp nhận được, nhóm nhạy cảm nên theo dõi." };
-    }
-    return { level: "Xấu", color: "danger", icon: "🔴", msg: "Tầm nhìn thấp, nên hạn chế vận động ngoài trời." };
+  function _sumNumbers(...values) {
+    let hasFinite = false;
+    const total = values.reduce((sum, v) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return sum;
+      hasFinite = true;
+      return sum + n;
+    }, 0);
+    return hasFinite ? total : null;
   }
 
-  function _renderAdvancedMetrics(lat, lon) {
-    const target = document.getElementById("sp-advanced-metrics");
-    if (!target) return;
+  function _extractAdvancedMetrics(data) {
+    const hourly = data?.hourly || {};
+    const times = Array.isArray(hourly.time) ? hourly.time : [];
+    const currentTime = data?.current?.time;
+    let idx = currentTime ? times.indexOf(currentTime) : -1;
+    if (idx < 0 && times.length > 0) idx = 0;
+
+    const uv = _pickNumber(data?.current?.uv_index, hourly?.uv_index?.[idx], data?.daily?.uv_index_max?.[0]);
+    const precipitationNow = _sumNumbers(
+      data?.current?.precipitation,
+      data?.current?.rain,
+      data?.current?.showers,
+      data?.current?.snowfall
+    );
+    const rainProbability = _pickNumber(hourly?.precipitation_probability?.[idx], 0);
+    const visibility = _pickNumber(data?.current?.visibility, hourly?.visibility?.[idx]);
+    const cloudCover = _pickNumber(data?.current?.cloud_cover, hourly?.cloud_cover?.[idx]);
+    const pm25 = _pickNumber(data?.current?.pm2_5, hourly?.pm2_5?.[idx]);
+    const pm10 = _pickNumber(data?.current?.pm10, hourly?.pm10?.[idx]);
+    const ozone = _pickNumber(data?.current?.ozone, hourly?.ozone?.[idx]);
+
+    return { uv, precipitationNow, rainProbability, visibility, cloudCover, pm25, pm10, ozone };
+  }
+
+  function _uvCard(uv) {
+    if (!Number.isFinite(uv)) return { label: "--", desc: "Không có dữ liệu UV", level: "unknown" };
+    if (uv < 3) return { label: `${uv.toFixed(1)} • Tốt`, desc: "An toàn cho hoạt động ngoài trời.", level: "good" };
+    if (uv < 6) return { label: `${uv.toFixed(1)} • Trung bình`, desc: "Nên chống nắng khi ra ngoài.", level: "warning" };
+    if (uv < 8) return { label: `${uv.toFixed(1)} • Cao`, desc: "Hạn chế ra nắng lâu, dùng kem chống nắng.", level: "danger" };
+    if (uv < 11) return { label: `${uv.toFixed(1)} • Rất cao`, desc: "Tránh nắng trực tiếp vào buổi trưa.", level: "danger" };
+    return { label: `${uv.toFixed(1)} • Cực cao`, desc: "Nguy cơ cháy nắng rất nhanh, nên ở trong nhà.", level: "danger" };
+  }
+
+  function _rainCard(precipitationNow, rainProbability) {
+    const hasPrecip = Number.isFinite(precipitationNow);
+    const prob = Number.isFinite(rainProbability) ? Math.round(rainProbability) : null;
+    if (hasPrecip && precipitationNow > 0.2) {
+      return {
+        label: `${precipitationNow.toFixed(1)} mm/h • Có mưa`,
+        desc: prob == null ? "Đang ghi nhận mưa hiện tại." : `Đang có mưa, xác suất ${prob}% trong giờ này.`,
+        level: "danger",
+      };
+    }
+    if (prob != null && prob >= 60) {
+      return { label: `${prob}% • Dễ mưa`, desc: "Hiện tại chưa mưa rõ, nhưng khả năng mưa cao.", level: "warning" };
+    }
+    if (prob != null) {
+      return { label: "Không mưa", desc: `Xác suất mưa giờ này khoảng ${prob}%.`, level: "good" };
+    }
+    return { label: "Không mưa", desc: "Không có dữ liệu xác suất mưa.", level: "unknown" };
+  }
+
+  function _airCard(visibility, cloudCover, pm25, pm10, ozone) {
+    const pm25Valid = Number.isFinite(pm25);
+    const pm10Valid = Number.isFinite(pm10);
+    const ozoneValid = Number.isFinite(ozone);
+    if (pm25Valid || pm10Valid || ozoneValid) {
+      let level = "good";
+      if ((pm25Valid && pm25 > 35) || (pm10Valid && pm10 > 80) || (ozoneValid && ozone > 120)) level = "danger";
+      else if ((pm25Valid && pm25 > 15) || (pm10Valid && pm10 > 45) || (ozoneValid && ozone > 80)) level = "warning";
+      const parts = [
+        pm25Valid ? `PM2.5 ${pm25.toFixed(1)}` : "PM2.5 --",
+        pm10Valid ? `PM10 ${pm10.toFixed(1)}` : "PM10 --",
+        ozoneValid ? `O₃ ${ozone.toFixed(1)}` : "O₃ --",
+      ];
+      const label = level === "good" ? "Tốt" : level === "warning" ? "Trung bình" : "Kém";
+      return { label, desc: parts.join(" • "), level };
+    }
+    if (!Number.isFinite(visibility)) return { label: "--", desc: "Không có dữ liệu không khí", level: "unknown" };
+    const visibilityKm = visibility / 1000;
+    const cloudText = Number.isFinite(cloudCover) ? `Mây ${Math.round(cloudCover)}%` : "Mây --";
+    if (visibilityKm >= 10) return { label: "Tốt", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "good" };
+    if (visibilityKm >= 5) return { label: "Trung bình", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "warning" };
+    return { label: "Kém", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "danger" };
+  }
+
+  function _setMetricCard(type, info) {
+    const card = document.getElementById(`sp-${type}-card`);
+    const valueEl = document.getElementById(`sp-${type}-value`);
+    const descEl = document.getElementById(`sp-${type}-desc`);
+    if (!card || !valueEl || !descEl) return;
+    valueEl.textContent = info.label;
+    descEl.textContent = info.desc;
+    card.classList.remove("sp-env-good", "sp-env-warning", "sp-env-danger", "sp-env-unknown");
+    card.classList.add(
+      info.level === "good"
+        ? "sp-env-good"
+        : info.level === "warning"
+          ? "sp-env-warning"
+          : info.level === "danger"
+            ? "sp-env-danger"
+            : "sp-env-unknown"
+    );
+  }
+
+  function _renderAdvancedMetrics(metrics) {
+    _setMetricCard("uv", _uvCard(metrics.uv));
+    _setMetricCard("rain", _rainCard(metrics.precipitationNow, metrics.rainProbability));
+    _setMetricCard("air", _airCard(metrics.visibility, metrics.cloudCover, metrics.pm25, metrics.pm10, metrics.ozone));
+  }
+
+  function _renderAdvancedMetricsError(message) {
+    _setMetricCard("uv", { label: "--", desc: message, level: "unknown" });
+    _setMetricCard("rain", { label: "--", desc: message, level: "unknown" });
+    _setMetricCard("air", { label: "--", desc: message, level: "unknown" });
+  }
+
+  function _loadAdvancedMetrics(lat, lon) {
+    const requestId = ++_lastMetricsRequestId;
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      target.innerHTML = `<p class="sp-coming-soon">Không có tọa độ để tải chỉ số UV & Không khí.</p>`;
+      _renderAdvancedMetricsError("Không có tọa độ để lấy UV và không khí.");
       return;
     }
-    const reqId = ++_lastMetricsRequestId;
-    target.innerHTML = `<p class="sp-coming-soon">Đang tải dữ liệu UV & Không khí...</p>`;
     OpenMeteoApi.getAdvancedMetrics(lat, lon)
       .then(data => {
-        if (reqId !== _lastMetricsRequestId) return;
-        const uv = data?.hourly?.uv_index?.[0];
-        const visibilityM = data?.hourly?.visibility?.[0];
-        const rainProb = data?.hourly?.precipitation_probability?.[0];
-        const cloud = data?.hourly?.cloudcover?.[0] ?? 0;
-        const visibilityKm = visibilityM ? visibilityM / 1000 : 0;
-        const uvState = _getUvLevel(uv);
-        const airState = _getAirProxyLevel(visibilityKm, cloud);
-        const rainState = rainProb == null
-          ? { level: "Không rõ", color: "muted", icon: "☔", msg: "Chưa có dữ liệu mưa." }
-          : rainProb < 30
-            ? { level: "Thấp", color: "good", icon: "🌤", msg: "Xác suất mưa thấp." }
-            : rainProb < 70
-              ? { level: "Trung bình", color: "moderate", icon: "🌦", msg: "Nên mang theo áo mưa dự phòng." }
-              : { level: "Cao", color: "danger", icon: "🌧", msg: "Khả năng mưa cao, nên chuẩn bị áo mưa." };
-        target.innerHTML = `
-          <div class="sp-adv-card sp-adv-${uvState.color}">
-            <div class="sp-adv-title">${uvState.icon} UV: <strong>${uv == null ? "--" : uv.toFixed(1)}</strong> · ${uvState.level}</div>
-            <p class="sp-adv-msg">${uvState.msg}</p>
-          </div>
-          <div class="sp-adv-card sp-adv-${rainState.color}">
-            <div class="sp-adv-title">${rainState.icon} Mưa: <strong>${rainProb == null ? "--" : `${Math.round(rainProb)}%`}</strong> · ${rainState.level}</div>
-            <p class="sp-adv-msg">${rainState.msg}</p>
-          </div>
-          <div class="sp-adv-card sp-adv-${airState.color}">
-            <div class="sp-adv-title">${airState.icon} Không khí: <strong>${airState.level}</strong></div>
-            <p class="sp-adv-msg">${airState.msg} (Tầm nhìn: ${visibilityKm ? visibilityKm.toFixed(1) : "--"} km)</p>
-          </div>
-        `;
+        if (requestId !== _lastMetricsRequestId) return;
+        _renderAdvancedMetrics(_extractAdvancedMetrics(data));
       })
       .catch(() => {
-        if (reqId !== _lastMetricsRequestId) return;
-        target.innerHTML = `<p class="sp-coming-soon">Không tải được UV/Không khí. Vui lòng thử lại.</p>`;
+        if (requestId !== _lastMetricsRequestId) return;
+        _renderAdvancedMetricsError("Không tải được dữ liệu UV và không khí.");
       });
   }
 
@@ -88,13 +165,11 @@ const SidePanel = (() => {
     panel.classList.remove("side-panel--collapsed");
     panel.classList.add("side-panel--open");
     panel.innerHTML = _buildHTML(weatherData, forecastData, unit);
-    _metricsReqToken += 1;
-    _loadAdvancedMetrics(weatherData?.coord?.lat, weatherData?.coord?.lon, _metricsReqToken);
     _setupCloseButton(panel);
     setTimeout(() => {
       const daily = Api.filterDailyForecast(forecastData.list);
       Chart.draw("side-chart", daily, unit);
-      _renderAdvancedMetrics(weatherData.coord?.lat, weatherData.coord?.lon);
+      _loadAdvancedMetrics(weatherData?.coord?.lat, weatherData?.coord?.lon);
       WeatherMap.invalidateSize();
       PanelManager.checkFAB();
     }, 350);
@@ -191,156 +266,9 @@ const SidePanel = (() => {
           <div class="sp-env-value" id="sp-air-value">--</div>
           <div class="sp-env-desc" id="sp-air-desc">Đang tải dữ liệu...</div>
         </div>
-      <div class="sp-aqi-placeholder" id="sp-advanced-metrics" aria-live="polite">
-        <p class="sp-coming-soon">📡 Đang tải dữ liệu UV & Không khí...</p>
       </div>
       <div class="sp-collapse-tab">Weather Info</div>
     `;
-  }
-
-  async function _loadAdvancedMetrics(lat, lon, token) {
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      _renderAdvancedMetricsError("Không có tọa độ để lấy UV/mưa hiện tại");
-      return;
-    }
-    try {
-      const data = await OpenMeteoApi.getAdvancedMetrics(lat, lon);
-      if (token !== _metricsReqToken) return;
-      const metrics = _extractAdvancedMetrics(data);
-      _renderAdvancedMetrics(metrics);
-    } catch {
-      if (token !== _metricsReqToken) return;
-      _renderAdvancedMetricsError("Không tải được dữ liệu UV/mưa hiện tại");
-    }
-  }
-
-  function _extractAdvancedMetrics(data) {
-    const hourly = data?.hourly || {};
-    const times = Array.isArray(hourly.time) ? hourly.time : [];
-    const currentTime = data?.current?.time;
-    let idx = currentTime ? times.indexOf(currentTime) : -1;
-    if (idx < 0 && times.length > 0) idx = 0;
-
-    const uv = _pickNumber(data?.current?.uv_index, hourly?.uv_index?.[idx], data?.daily?.uv_index_max?.[0]);
-    const precipitationNow = _sumNumbers(
-      data?.current?.precipitation,
-      data?.current?.rain,
-      data?.current?.showers,
-      data?.current?.snowfall
-    );
-    const rainProbability = _pickNumber(hourly?.precipitation_probability?.[idx], 0);
-    const visibility = _pickNumber(data?.current?.visibility, hourly?.visibility?.[idx]);
-    const cloudCover = _pickNumber(data?.current?.cloud_cover, hourly?.cloud_cover?.[idx]);
-
-    return { uv, precipitationNow, rainProbability, visibility, cloudCover };
-  }
-
-  function _pickNumber(...values) {
-    for (const v of values) {
-      const n = Number(v);
-      if (Number.isFinite(n)) return n;
-    }
-    return null;
-  }
-
-  function _sumNumbers(...values) {
-    let hasFinite = false;
-    const total = values.reduce((sum, v) => {
-      const n = Number(v);
-      if (!Number.isFinite(n)) return sum;
-      hasFinite = true;
-      return sum + n;
-    }, 0);
-    return hasFinite ? total : null;
-  }
-
-  function _renderAdvancedMetrics(metrics) {
-    const uvInfo = _getUvLevel(metrics.uv);
-    const rainInfo = _getRainLevel(metrics.precipitationNow, metrics.rainProbability);
-    const airInfo = _getAirQuality(metrics.visibility, metrics.cloudCover);
-
-    _setMetricCard("uv", uvInfo);
-    _setMetricCard("rain", rainInfo);
-    _setMetricCard("air", airInfo);
-  }
-
-  function _renderAdvancedMetricsError(message) {
-    _setMetricCard("uv", { label: "--", desc: message, level: "unknown" });
-    _setMetricCard("rain", { label: "--", desc: message, level: "unknown" });
-    _setMetricCard("air", { label: "--", desc: message, level: "unknown" });
-  }
-
-  function _setMetricCard(type, info) {
-    const card = document.getElementById(`sp-${type}-card`);
-    const valueEl = document.getElementById(`sp-${type}-value`);
-    const descEl = document.getElementById(`sp-${type}-desc`);
-    if (!card || !valueEl || !descEl) return;
-    valueEl.textContent = info.label;
-    descEl.textContent = info.desc;
-    card.classList.remove("sp-env-good", "sp-env-warning", "sp-env-danger", "sp-env-unknown");
-    card.classList.add(
-      info.level === "good"
-        ? "sp-env-good"
-        : info.level === "warning"
-          ? "sp-env-warning"
-          : info.level === "danger"
-            ? "sp-env-danger"
-            : "sp-env-unknown"
-    );
-  }
-
-  function _getUvLevel(uv) {
-    if (!Number.isFinite(uv)) {
-      return { label: "--", desc: "Không có dữ liệu UV", level: "unknown" };
-    }
-    if (uv < 3) {
-      return { label: `${uv.toFixed(1)} • Tốt`, desc: "An toàn cho hoạt động ngoài trời.", level: "good" };
-    }
-    if (uv < 6) {
-      return { label: `${uv.toFixed(1)} • Trung bình`, desc: "Nên chống nắng khi ra ngoài.", level: "warning" };
-    }
-    if (uv < 8) {
-      return { label: `${uv.toFixed(1)} • Cao`, desc: "Hạn chế ra nắng lâu, dùng kem chống nắng.", level: "danger" };
-    }
-    if (uv < 11) {
-      return { label: `${uv.toFixed(1)} • Rất cao`, desc: "Tránh nắng trực tiếp vào buổi trưa.", level: "danger" };
-    }
-    return { label: `${uv.toFixed(1)} • Cực cao`, desc: "Nguy cơ cháy nắng rất nhanh, nên ở trong nhà.", level: "danger" };
-  }
-
-  function _getRainLevel(precipitationNow, rainProbability) {
-    const hasPrecip = Number.isFinite(precipitationNow);
-    const prob = Number.isFinite(rainProbability) ? Math.round(rainProbability) : null;
-    if (hasPrecip && precipitationNow > 0.2) {
-      return {
-        label: `${precipitationNow.toFixed(1)} mm/h • Có mưa`,
-        desc: prob === null ? "Đang ghi nhận mưa hiện tại." : `Đang có mưa, xác suất ${prob}% trong giờ này.`,
-        level: "danger",
-      };
-    }
-    if (prob !== null && prob >= 60) {
-      return { label: `${prob}% • Dễ mưa`, desc: "Hiện tại chưa mưa rõ, nhưng khả năng mưa cao.", level: "warning" };
-    }
-    if (prob !== null) {
-      return { label: "Không mưa", desc: `Xác suất mưa giờ này khoảng ${prob}%.`, level: "good" };
-    }
-    return { label: "Không mưa", desc: "Không có dữ liệu xác suất mưa.", level: "unknown" };
-  }
-
-  function _getAirQuality(visibility, cloudCover) {
-    if (!Number.isFinite(visibility)) {
-      return { label: "--", desc: "Không có dữ liệu tầm nhìn", level: "unknown" };
-    }
-    const visibilityKm = visibility / 1000;
-    const cloudText = Number.isFinite(cloudCover) ? `Mây ${Math.round(cloudCover)}%` : "Mây --";
-
-    if (visibilityKm >= 10) {
-      return { label: "Tốt", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "good" };
-    }
-    if (visibilityKm >= 5) {
-      return { label: "Trung bình", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "warning" };
-    }
-    return { label: "Kém", desc: `Tầm nhìn ${visibilityKm.toFixed(1)} km • ${cloudText}`, level: "danger" };
   }
 
   function _setupCloseButton(panel) {
