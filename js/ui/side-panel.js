@@ -1,16 +1,24 @@
 const SidePanel = (() => {
   let _isOpen = false;
+  let _isCollapsed = false;
   let _forecastData = null;
+  let _lastWeatherData = null;
+  let _lastUnit = "C";
 
   function open(weatherData, forecastData, unit) {
     _forecastData = forecastData;
+    _lastWeatherData = weatherData;
+    _lastUnit = unit;
     _isOpen = true;
+    _isCollapsed = false;
+    document.getElementById("sp-reopen-btn")?.remove();
     let panel = document.getElementById("side-panel");
     if (!panel) {
       panel = document.createElement("div");
       panel.id = "side-panel";
       document.body.appendChild(panel);
     }
+    panel.classList.remove("side-panel--collapsed");
     panel.classList.add("side-panel--open");
     panel.innerHTML = _buildHTML(weatherData, forecastData, unit);
     _setupCloseButton(panel);
@@ -18,7 +26,8 @@ const SidePanel = (() => {
       const daily = Api.filterDailyForecast(forecastData.list);
       Chart.draw("side-chart", daily, unit);
       WeatherMap.invalidateSize();
-    }, 90);
+      PanelManager.checkFAB();
+    }, 350);
   }
 
   function updateTimeStep(forecastItem, unit) {
@@ -38,8 +47,14 @@ const SidePanel = (() => {
 
   function close() {
     _isOpen = false;
-    document.getElementById("side-panel")?.classList.remove("side-panel--open");
-    setTimeout(() => WeatherMap.invalidateSize(), 120);
+    _isCollapsed = false;
+    const panel = document.getElementById("side-panel");
+    panel?.classList.remove("side-panel--open", "side-panel--collapsed");
+    _createReopenBtn();
+    setTimeout(() => {
+      WeatherMap.invalidateSize();
+      PanelManager.checkFAB();
+    }, 350);
   }
 
   function _buildHTML(w, f, unit) {
@@ -59,7 +74,10 @@ const SidePanel = (() => {
           <h2>${w.name}</h2>
           <span class="sp-country">${w.sys.country}</span>
         </div>
-        <button class="sp-close" id="sp-close-btn">✕</button>
+        <div class="sp-header-actions">
+          <button class="sp-collapse" id="sp-collapse-btn" title="Thu gọn panel">◀</button>
+          <button class="sp-close" id="sp-close-btn" title="Đóng">✕</button>
+        </div>
       </div>
 
       <div class="sp-main-temp">
@@ -90,16 +108,67 @@ const SidePanel = (() => {
       <div class="sp-aqi-placeholder">
         <p class="sp-coming-soon">📡 Tính năng AQI — Sắp ra mắt</p>
       </div>
+      <div class="sp-collapse-tab">Weather Info</div>
     `;
   }
 
   function _setupCloseButton(panel) {
     panel.querySelector("#sp-close-btn")?.addEventListener("click", close);
+    panel.querySelector("#sp-collapse-btn")?.addEventListener("click", toggleCollapse);
+  }
+
+  function toggleCollapse() {
+    const panel = document.getElementById("side-panel");
+    const btn = document.getElementById("sp-collapse-btn");
+    if (!panel) return;
+    _isCollapsed = !_isCollapsed;
+
+    if (_isCollapsed) {
+      panel.classList.add("side-panel--collapsed");
+      if (btn) {
+        btn.textContent = "▶";
+        btn.title = "Mở rộng panel";
+      }
+    } else {
+      panel.classList.remove("side-panel--collapsed");
+      if (btn) {
+        btn.textContent = "◀";
+        btn.title = "Thu gọn panel";
+      }
+    }
+
+    setTimeout(() => {
+      WeatherMap.invalidateSize();
+      PanelManager.checkFAB();
+    }, 350);
+  }
+
+  function _createReopenBtn() {
+    if (!_lastWeatherData || !_forecastData) return;
+    let btn = document.getElementById("sp-reopen-btn");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.id = "sp-reopen-btn";
+      btn.innerHTML = `<span>📍</span><span class="sp-reopen-label">Thông tin</span>`;
+      document.body.appendChild(btn);
+    }
+    btn.onclick = () => {
+      btn.remove();
+      open(_lastWeatherData, _forecastData, _lastUnit);
+    };
+  }
+
+  function reopenFromFab() {
+    if (_isOpen) {
+      if (_isCollapsed) toggleCollapse();
+      return;
+    }
+    document.getElementById("sp-reopen-btn")?.click();
   }
 
   function isOpen() {
     return _isOpen;
   }
 
-  return { open, close, updateTimeStep, updateUnit, isOpen };
+  return { open, close, updateTimeStep, updateUnit, isOpen, toggleCollapse, reopenFromFab };
 })();

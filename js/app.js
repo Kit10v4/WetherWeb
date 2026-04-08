@@ -75,6 +75,7 @@ const App = (() => {
     renderAlerts(weatherData);
     Storage.addToHistory(cityInput);
     Components.showToast(`Đã cập nhật ${weatherData.name}`, "success");
+    PanelManager.checkFAB();
   }
 
   function _handleError(err) {
@@ -193,8 +194,40 @@ const App = (() => {
 
     const bar = document.createElement("div");
     bar.id = "alerts-bar";
-    bar.innerHTML = alerts.map(a => `<div class="alert-item alert-item--${a.type}">${a.msg}</div>`).join("");
-    document.querySelector("header")?.insertAdjacentElement("afterend", bar);
+    bar.innerHTML = alerts.map((a, i) => `
+      <div class="alert-item alert-item--${a.type}" data-alert-idx="${i}">
+        <span class="alert-text">${a.msg}</span>
+        <button class="alert-dismiss" data-idx="${i}" title="Đóng thông báo">✕</button>
+      </div>
+    `).join("");
+
+    document.getElementById("app-header")?.insertAdjacentElement("afterend", bar);
+
+    bar.querySelectorAll(".alert-dismiss").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const alertItem = btn.closest(".alert-item");
+        if (!alertItem) return;
+        alertItem.style.opacity = "0";
+        alertItem.style.maxHeight = "0";
+        alertItem.style.overflow = "hidden";
+        alertItem.style.padding = "0";
+        setTimeout(() => {
+          alertItem.remove();
+          if (bar.querySelectorAll(".alert-item").length === 0) {
+            bar.remove();
+          }
+        }, 320);
+      });
+    });
+
+    alerts.forEach((a, i) => {
+      if (a.type !== "danger") {
+        setTimeout(() => {
+          bar.querySelector(`[data-alert-idx="${i}"]`)?.querySelector(".alert-dismiss")?.click();
+        }, 12000);
+      }
+    });
   }
 
   function _showHistory() {
