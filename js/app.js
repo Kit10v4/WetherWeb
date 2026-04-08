@@ -1,157 +1,98 @@
-// ================================================================
-// FILE: js/app.js
-// MÔ TẢ: Entry point — khởi tạo app, event listeners, điều phối
-// ================================================================
-
 const App = (() => {
-
-  // ── State ────────────────────────────────────────────────────────
   let currentUnit = "C";
-
-  // ── Init ─────────────────────────────────────────────────────────
+  let lastWeatherData = null;
+  let lastForecastData = null;
 
   function init() {
     currentUnit = Storage.getUnit();
     _applyTheme(Storage.getTheme());
-    _renderSuggestedCities();
-    _setupEventListeners();
     _applyUnitToggleUI(currentUnit);
+    _setupEventListeners();
+    WeatherMap.init();
 
-    // Tự động tải thành phố cuối cùng đã xem (nếu có)
+    SearchAutocomplete.init(document.getElementById("search-input"), ({ name, lat, lon }) => {
+      searchByCoords(lat, lon, name);
+    });
+
     const lastCity = Storage.getHistory()[0];
     if (lastCity) searchCity(lastCity);
+    else searchCity("Hà Nội");
   }
 
-  // ── Search ───────────────────────────────────────────────────────
-
-  /**
-   * Thực hiện tìm kiếm thời tiết theo tên thành phố
-   * @param {string} city
-   */
   async function searchCity(city) {
-    const trimmed = city.trim();
-    const apiCity  = Utils.resolveCity(trimmed);
-    // Validate
-    if (!trimmed) {
-      Components.showInputError("Vui lòng nhập tên thành phố");
+    const apiCity = Utils.resolveCity(city.trim());
+    if (!apiCity || apiCity.length < 2) {
+      Components.showToast("Vui lòng nhập tên thành phố hợp lệ", "error");
       return;
     }
-    if (trimmed.length < 2) {
-      Components.showInputError("Tên thành phố phải có ít nhất 2 ký tự");
-      return;
-    }
-    if (!/^[a-zA-ZÀ-ỹ\s.\-']+$/.test(trimmed)) {
-      Components.showInputError("Tên thành phố không hợp lệ");
-      return;
-    }
-
-    Components.clearInputError();
     Components.hideHistoryDropdown();
-
-    // Hiện khu vực kết quả ngay khi bắt đầu tìm (kể cả auto-load từ history)
-    document.getElementById("empty-state")?.classList.add("hidden");
-    document.getElementById("result-section")?.classList.remove("hidden");
-
     Components.showLoading();
-
+    Timeline.destroy();
     try {
-      let weatherData, forecastData;
-
-      // Kiểm tra cache trước — nếu còn hạn thì không gọi API
-      const cached = Storage.getCachedWeather(apiCity);
-
-      if (cached) {
-        // Dùng dữ liệu cache, không tốn API call
-        console.log(`[Cache] Dùng dữ liệu cache cho "${apiCity}"`);
-        weatherData  = cached.weather;
-        forecastData = cached.forecast;
-      } else {
-        // Gọi API song song
-        console.log(`[API] Gọi API mới cho "${apiCity}"`);
-        [weatherData, forecastData] = await Promise.all([
-          Api.getCurrentWeather(apiCity),
-          Api.getForecast(apiCity),
-        ]);
-
-        // Lưu vào cache để lần sau dùng lại
-        Storage.setCachedWeather(apiCity, {
-          weather:  weatherData,
-          forecast: forecastData,
-        });
-      }
-
-      CurrentUI.render(weatherData, currentUnit);
-      ForecastUI.render(forecastData, currentUnit);
-      // Lấy tọa độ từ dữ liệu API rồi hiện bản đồ
-      WeatherMap.flyToCity(
-        weatherData.coord?.lat,
-        weatherData.coord?.lon,
-        weatherData.name,
-        weatherData
-      );
-      Storage.addToHistory(trimmed);
-
+      const [weatherData, forecastData] = await Promise.all([
+        Api.getCurrentWeather(apiCity, currentUnit),
+        Api.getForecast(apiCity, currentUnit),
+      ]);
+      _onDataLoaded(weatherData, forecastData, city);
     } catch (err) {
-      const code = err.message; // '404', '401', '429'...
-      const isNetwork = !navigator.onLine || err.name === "TypeError";
-      Components.showResultError(isNetwork ? "network" : code);
-      Components.showToast(
-        isNetwork ? "Lỗi kết nối. Kiểm tra internet của bạn" : `Lỗi ${code}`,
-        "error"
-      );
+      _handleError(err);
     } finally {
       Components.hideLoading();
     }
   }
 
-  /** Tìm kiếm theo vị trí GPS hiện tại */
-  async function searchByLocation() {
-    if (!navigator.geolocation) {
-      Components.showToast("Trình duyệt không hỗ trợ định vị", "error");
+  async function searchByCoords(lat, lon, name) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      Components.showToast("Tọa độ không hợp lệ", "error");
       return;
     }
-
     Components.showLoading();
-
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        try {
-          const [weatherData, forecastData] = await Promise.all([
-            Api.getWeatherByCoords(coords.latitude, coords.longitude),
-            Api.getForecastByCoords(coords.latitude, coords.longitude),
-          ]);
-          document.getElementById("empty-state")?.classList.add("hidden");
-          document.getElementById("result-section")?.classList.remove("hidden");
-          CurrentUI.render(weatherData, currentUnit);
-          ForecastUI.render(forecastData, currentUnit);
-          WeatherMap.flyToCity(
-            weatherData.coord?.lat,
-            weatherData.coord?.lon,
-            weatherData.name,
-            weatherData
-          );
-          Storage.addToHistory(weatherData.name);
-        } catch (err) {
-          Components.showResultError(err.message);
-        } finally {
-          Components.hideLoading();
-        }
-      },
-      () => {
-        Components.hideLoading();
-        Components.showToast("Không thể lấy vị trí. Vui lòng cho phép truy cập GPS", "error");
-      }
-    );
+    Timeline.destroy();
+    try {
+      const [weatherData, forecastData] = await Promise.all([
+        Api.getWeatherByCoords(lat, lon, currentUnit),
+        Api.getForecastByCoords(lat, lon, currentUnit),
+      ]);
+      _onDataLoaded(weatherData, forecastData, name || weatherData.name);
+    } catch (err) {
+      _handleError(err);
+    } finally {
+      Components.hideLoading();
+    }
   }
 
-  // ── Unit Toggle ──────────────────────────────────────────────────
+  function _onDataLoaded(weatherData, forecastData, cityInput) {
+    lastWeatherData = weatherData;
+    lastForecastData = forecastData;
+
+    SidePanel.open(weatherData, forecastData, currentUnit);
+    WeatherMap.flyToCity(weatherData.coord.lat, weatherData.coord.lon, weatherData.name, weatherData);
+
+    Timeline.init(forecastData.list, item => {
+      SidePanel.updateTimeStep(item, currentUnit);
+    });
+
+    renderAlerts(weatherData);
+    Storage.addToHistory(cityInput);
+    Components.showToast(`Đã cập nhật ${weatherData.name}`, "success");
+  }
+
+  function _handleError(err) {
+    const code = err.message;
+    const isNetwork = !navigator.onLine || err.name === "TypeError";
+    Components.showToast(
+      isNetwork ? "Lỗi kết nối — Kiểm tra internet" : code === "404" ? "Không tìm thấy thành phố" : `Lỗi ${code}`,
+      "error"
+    );
+  }
 
   function _toggleUnit() {
     currentUnit = currentUnit === "C" ? "F" : "C";
     Storage.setUnit(currentUnit);
     _applyUnitToggleUI(currentUnit);
-    CurrentUI.updateUnit(currentUnit);
-    ForecastUI.updateUnit(currentUnit);
+    if (lastWeatherData && lastForecastData) {
+      searchByCoords(lastWeatherData.coord.lat, lastWeatherData.coord.lon, lastWeatherData.name);
+    }
   }
 
   function _applyUnitToggleUI(unit) {
@@ -162,12 +103,13 @@ const App = (() => {
     btnF.classList.toggle("unit-active", unit === "F");
   }
 
-  // ── Theme Toggle ─────────────────────────────────────────────────
-
   function _toggleTheme() {
     const next = Storage.getTheme() === "light" ? "dark" : "light";
     Storage.setTheme(next);
     _applyTheme(next);
+    if (lastWeatherData && lastForecastData) {
+      SidePanel.updateUnit(currentUnit, lastWeatherData);
+    }
   }
 
   function _applyTheme(theme) {
@@ -176,90 +118,98 @@ const App = (() => {
     if (icon) icon.textContent = theme === "dark" ? "☀️" : "🌙";
   }
 
-  // ── Suggested Cities ─────────────────────────────────────────────
-
-  function _renderSuggestedCities() {
-    const container = document.getElementById("suggested-cities");
-    if (!container) return;
-    container.innerHTML = CONFIG.SUGGESTED_CITIES.map(city => `
-      <button class="suggested-city px-3 py-1 text-sm bg-white/20 hover:bg-white/40
-                     text-white rounded-full border border-white/30
-                     transition-all duration-150 backdrop-blur-sm"
-              data-city="${city}">${city}</button>
-    `).join("");
-
-    container.querySelectorAll(".suggested-city").forEach(btn =>
-      btn.addEventListener("click", () => searchCity(btn.dataset.city))
-    );
-  }
-
-  // ── Event Listeners ──────────────────────────────────────────────
-
   function _setupEventListeners() {
     const searchInput = document.getElementById("search-input");
-    const btnSearch   = document.getElementById("btn-search");
-    const btnLocation = document.getElementById("btn-location");
-    const btnUnitC    = document.getElementById("btn-unit-c");
-    const btnUnitF    = document.getElementById("btn-unit-f");
-    const btnTheme    = document.getElementById("btn-theme");
-    
-    // Tìm kiếm khi bấm nút
-    btnSearch?.addEventListener("click", () => {
-      searchCity(searchInput.value);
-    });
-
-    // Tìm kiếm khi nhấn Enter
+    document.getElementById("btn-search")?.addEventListener("click", () => searchCity(searchInput.value));
     searchInput?.addEventListener("keydown", e => {
       if (e.key === "Enter") searchCity(searchInput.value);
       if (e.key === "Escape") Components.hideHistoryDropdown();
     });
-
-    // Debounce: mở dropdown lịch sử khi focus/input
     searchInput?.addEventListener("focus", _showHistory);
-    searchInput?.addEventListener("input",
+    searchInput?.addEventListener(
+      "input",
       Utils.debounce(() => {
         if (searchInput.value.trim() === "") _showHistory();
       }, 200)
     );
-
-    // Đóng dropdown khi click ra ngoài
     document.addEventListener("click", e => {
-      if (!e.target.closest("#search-wrapper")) {
-        Components.hideHistoryDropdown();
-      }
+      if (!e.target.closest("#search-wrapper")) Components.hideHistoryDropdown();
     });
-
-    // Vị trí GPS
-    btnLocation?.addEventListener("click", searchByLocation);
-
-    // Toggle đơn vị
-    btnUnitC?.addEventListener("click", () => { if (currentUnit !== "C") _toggleUnit(); });
-    btnUnitF?.addEventListener("click", () => { if (currentUnit !== "F") _toggleUnit(); });
-
-    // Toggle theme
-    btnTheme?.addEventListener("click", _toggleTheme);
-
-    // Resize: vẽ lại biểu đồ
-    window.addEventListener("resize", Utils.debounce(() => {
-      const dailyList = ForecastUI._dailyList;
-      if (dailyList) Chart.update("temp-chart", dailyList, currentUnit);
-    }, 300));
+    document.getElementById("btn-location")?.addEventListener("click", searchByLocation);
+    document.getElementById("btn-unit-c")?.addEventListener("click", () => {
+      if (currentUnit !== "C") _toggleUnit();
+    });
+    document.getElementById("btn-unit-f")?.addEventListener("click", () => {
+      if (currentUnit !== "F") _toggleUnit();
+    });
+    document.getElementById("btn-theme")?.addEventListener("click", _toggleTheme);
+    window.addEventListener(
+      "resize",
+      Utils.debounce(() => WeatherMap.invalidateSize(), 250)
+    );
   }
 
-  /** Render và hiện dropdown lịch sử */
+  async function searchByLocation() {
+    if (!navigator.geolocation) {
+      Components.showToast("Trình duyệt không hỗ trợ định vị", "error");
+      return;
+    }
+
+    Components.showLoading();
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          await searchByCoords(coords.latitude, coords.longitude, "Vị trí của tôi");
+        } finally {
+          Components.hideLoading();
+        }
+      },
+      () => {
+        Components.hideLoading();
+        Components.showToast("Không thể lấy vị trí. Vui lòng cho phép GPS", "error");
+      }
+    );
+  }
+
+  function _generateLocalAlerts(weatherData) {
+    const alerts = [];
+    const { temp, humidity } = weatherData.main;
+    const windSpeed = Utils.msToKmh(weatherData.wind.speed);
+    const weatherId = weatherData.weather[0].id;
+
+    if (temp > 38) alerts.push({ type: "danger", msg: "⚠️ Nắng nóng gay gắt — Hạn chế ra ngoài 10h-16h" });
+    if (humidity > 90) alerts.push({ type: "warning", msg: "💧 Độ ẩm rất cao — Nguy cơ oi bức" });
+    if (windSpeed > 60) alerts.push({ type: "danger", msg: "🌪 Gió mạnh cấp 8+ — Cẩn thận khi di chuyển" });
+    if (weatherId >= 200 && weatherId < 300) alerts.push({ type: "danger", msg: "⛈ Đang có dông — Tránh khu vực trống trải" });
+    if (weatherId >= 500 && weatherId < 600) alerts.push({ type: "warning", msg: "🌧 Đang có mưa — Chuẩn bị áo mưa" });
+    return alerts;
+  }
+
+  function renderAlerts(weatherData) {
+    const alerts = _generateLocalAlerts(weatherData);
+    const existing = document.getElementById("alerts-bar");
+    if (existing) existing.remove();
+    if (alerts.length === 0) return;
+
+    const bar = document.createElement("div");
+    bar.id = "alerts-bar";
+    bar.innerHTML = alerts.map(a => `<div class="alert-item alert-item--${a.type}">${a.msg}</div>`).join("");
+    document.querySelector("header")?.insertAdjacentElement("afterend", bar);
+  }
+
   function _showHistory() {
     const history = Storage.getHistory();
     Components.renderHistoryDropdown(
       history,
-      city => { // onSelect
+      city => {
         document.getElementById("search-input").value = city;
         searchCity(city);
       },
-      city => { // onRemove
+      city => {
         Storage.removeFromHistory(city);
-        _showHistory(); // re-render dropdown
+        _showHistory();
       },
-      () => { // onClearAll
+      () => {
         Storage.clearHistory();
         Components.hideHistoryDropdown();
         Components.showToast("Đã xóa toàn bộ lịch sử", "info");
@@ -267,8 +217,7 @@ const App = (() => {
     );
   }
 
-  return { init, searchCity };
+  return { init, searchCity, searchByCoords };
 })();
 
-// ── Khởi động ứng dụng khi DOM đã sẵn sàng ──────────────────────
 document.addEventListener("DOMContentLoaded", App.init);

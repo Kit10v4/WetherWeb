@@ -4,6 +4,9 @@
 // ================================================================
 
 const Api = (() => {
+  function _buildUnits(unit = "C") {
+    return unit === "F" ? "imperial" : "metric";
+  }
 
   /**
    * Hàm fetch nội bộ — xử lý lỗi HTTP tập trung
@@ -24,8 +27,8 @@ const Api = (() => {
    * @param {string} city
    * @returns {Promise<object>} - WeatherData object
    */
-  async function getCurrentWeather(city) {
-    const url = `${CONFIG.BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${CONFIG.API_KEY}&units=metric&lang=vi`;
+  async function getCurrentWeather(city, unit = "C") {
+    const url = `/api/weather?city=${encodeURIComponent(city)}&units=${_buildUnits(unit)}&lang=vi`;
     return _fetch(url);
   }
 
@@ -34,8 +37,8 @@ const Api = (() => {
    * @param {string} city
    * @returns {Promise<object>} - ForecastData object
    */
-  async function getForecast(city) {
-    const url = `${CONFIG.BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${CONFIG.API_KEY}&units=metric&cnt=40`;
+  async function getForecast(city, unit = "C") {
+    const url = `/api/forecast?city=${encodeURIComponent(city)}&units=${_buildUnits(unit)}&lang=vi`;
     return _fetch(url);
   }
 
@@ -45,8 +48,8 @@ const Api = (() => {
    * @param {number} lon
    * @returns {Promise<object>}
    */
-  async function getWeatherByCoords(lat, lon) {
-    const url = `${CONFIG.BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${CONFIG.API_KEY}&units=metric&lang=vi`;
+  async function getWeatherByCoords(lat, lon, unit = "C") {
+    const url = `/api/weather-coords?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&units=${_buildUnits(unit)}&lang=vi`;
     return _fetch(url);
   }
 
@@ -56,8 +59,8 @@ const Api = (() => {
    * @param {number} lon
    * @returns {Promise<object>}
    */
-  async function getForecastByCoords(lat, lon) {
-    const url = `${CONFIG.BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${CONFIG.API_KEY}&units=metric&cnt=40`;
+  async function getForecastByCoords(lat, lon, unit = "C") {
+    const url = `/api/forecast-coords?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&units=${_buildUnits(unit)}&lang=vi`;
     return _fetch(url);
   }
 

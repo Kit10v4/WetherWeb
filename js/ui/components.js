@@ -93,25 +93,23 @@ const Components = (() => {
 
     if (history.length === 0) {
       dropdown.innerHTML = `
-        <p class="px-4 py-3 text-sm text-gray-400">Chưa có lịch sử tìm kiếm</p>`;
+        <p class="history-item">Chưa có lịch sử tìm kiếm</p>`;
       dropdown.classList.remove("hidden");
       return;
     }
 
     const items = history.map(city => `
-      <div class="history-item flex items-center justify-between px-4 py-2 hover:bg-blue-50 cursor-pointer group">
-        <span class="history-city text-sm text-gray-700 flex-1 truncate" data-city="${city}">
-          <i class="history-icon mr-2 text-gray-400">🕐</i>${city}
+      <div class="history-item">
+        <span class="history-city" data-city="${city}">
+          <span class="history-icon">🕐</span> ${city}
         </span>
-        <button class="history-remove text-gray-300 hover:text-red-400 ml-2 text-xs px-1"
-                data-city="${city}" title="Xóa">✕</button>
+        <button class="history-remove" data-city="${city}" title="Xóa">✕</button>
       </div>`).join("");
 
     dropdown.innerHTML = `
       ${items}
-      <div class="border-t border-gray-100 px-4 py-2">
-        <button id="btn-clear-all"
-                class="text-xs text-red-400 hover:text-red-600 hover:underline">
+      <div class="history-item">
+        <button id="btn-clear-all" class="history-remove">
           Xóa tất cả lịch sử
         </button>
       </div>`;

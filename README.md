@@ -1,45 +1,59 @@
-# ⛅ WeatherWeb — Ứng dụng Dự báo Thời tiết
+# WeatherWeb (Windy-style, Serverless)
 
-WeatherWeb là một ứng dụng web dự báo thời tiết hiện đại, sử dụng OpenWeatherMap API để cung cấp thông tin thời tiết chính xác và chi tiết. Với giao diện thân thiện, tính năng đa dạng và hiệu suất tối ưu, WeatherWeb giúp bạn dễ dàng theo dõi thời tiết ở bất kỳ đâu.
+WeatherWeb da duoc nang cap theo huong immersive UI/UX voi map full-screen, side panel, timeline scrubber, wind particles, va serverless proxy de an OpenWeatherMap API key.
 
-## 🚀 WEB
+## Kien truc moi
 
-https://weatherbasic.vercel.app/
+- Client chi goi cac endpoint noi bo `/api/*`.
+- API key chi ton tai o serverless environment variable `OWM_API_KEY`.
+- Open-Meteo duoc goi truc tiep o client (khong can key).
 
-## 📁 Cấu trúc
+## Thu muc chinh
 
-```
+```text
 weatherpro/
-├── index.html          ← Giao diện chính
-├── config.js           ← API key (không commit!)
-├── css/style.css       ← Custom CSS + animations
-├── js/
-│   ├── app.js          ← Entry point
-│   ├── api.js          ← Fetch OpenWeatherMap
-│   ├── utils.js        ← Helper functions
-│   ├── storage.js      ← localStorage
-│   ├── chart.js        ← Biểu đồ Canvas
-│   └── ui/
-│       ├── current.js  ← Render thời tiết hiện tại
-│       ├── forecast.js ← Render dự báo 5 ngày
-│       └── components.js ← Toast, spinner, dropdown
-└── assets/
-    └── images/hero-bg.jpg
+|-- api/
+|   |-- weather.js
+|   |-- forecast.js
+|   |-- weather-coords.js
+|   |-- forecast-coords.js
+|   |-- geocode.js
+|   `-- map-tile.js
+|-- css/style.css
+|-- js/
+|   |-- app.js
+|   |-- api.js
+|   |-- api-openmeteo.js
+|   |-- map.js
+|   |-- layers/
+|   |   |-- wind-layer.js
+|   |   `-- radar.js
+|   `-- ui/
+|       |-- side-panel.js
+|       |-- timeline.js
+|       `-- search-autocomplete.js
+|-- config.js
+|-- index.html
+|-- vercel.json
+`-- .env.example
 ```
 
-## ✨ Tính năng
+## Setup nhanh
 
-- 🔍 Tìm kiếm thời tiết theo tên thành phố
-- 📍 Định vị GPS tự động
-- 📅 Dự báo 5 ngày với biểu đồ nhiệt độ
-- 🌡 Toggle °C / °F
-- 🕐 Lịch sử tìm kiếm (localStorage)
-- 🌙 Dark mode
-- 📱 Responsive (Mobile / Tablet / Desktop)
+1. Tao file `.env` tu `.env.example`.
+2. Dat `OWM_API_KEY=your_real_key`.
+3. Chay local voi Vercel:
 
-## 🛠 Công nghệ
+```bash
+vercel dev
+```
 
-- HTML5 · Tailwind CSS · Vanilla JavaScript ES6+
-- OpenWeatherMap API
-- HTML5 Canvas API
-- Leaflet.js (bản đồ)
+## Tinh nang chinh
+
+- Full-screen weather map + layer picker.
+- Wind particles (leaflet-velocity).
+- Side panel chi tiet thoi tiet + mini chart.
+- Timeline scrubber 5 ngay (40 moc 3h).
+- Geocoding autocomplete qua serverless proxy.
+- Alerts banner theo dieu kien thoi tiet.
+- Mobile UX dang bottom-sheet + timeline compact.

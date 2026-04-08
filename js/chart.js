@@ -5,18 +5,28 @@
 
 const Chart = (() => {
 
-  // Màu sắc biểu đồ (Corporate theme)
-  const COLORS = {
-    line:        "#0099CC",
-    gradientTop: "rgba(0,153,204,0.35)",
-    gradientBot: "rgba(0,153,204,0.01)",
-    point:       "#1A3A5C",
-    pointHover:  "#0099CC",
-    text:        "#1A1A1A",
-    subText:     "#888888",
-    grid:        "rgba(0,0,0,0.07)",
-    axis:        "#CCCCCC",
-  };
+  function _getColors() {
+    const dark = document.documentElement.getAttribute("data-theme") !== "light";
+    return dark
+      ? {
+          line: "#38bdf8",
+          gradientTop: "rgba(56,189,248,0.35)",
+          gradientBot: "rgba(56,189,248,0.01)",
+          point: "#bae6fd",
+          text: "#e8edf3",
+          subText: "rgba(232,237,243,0.62)",
+          grid: "rgba(255,255,255,0.12)",
+        }
+      : {
+          line: "#0099CC",
+          gradientTop: "rgba(0,153,204,0.35)",
+          gradientBot: "rgba(0,153,204,0.01)",
+          point: "#1A3A5C",
+          text: "#1A1A1A",
+          subText: "#888888",
+          grid: "rgba(0,0,0,0.07)",
+        };
+  }
 
   const PADDING = { top: 50, right: 30, bottom: 55, left: 48 };
   let _animFrame = null;
@@ -65,10 +75,11 @@ const Chart = (() => {
       const ratio = progress / STEPS;
 
       ctx.clearRect(0, 0, W, H);
-      _drawGrid(ctx, W, H, minT, maxT, unit);
-      _drawGradient(ctx, temps, xOf, yOf, plotH, ratio);
-      _drawLine(ctx, temps, xOf, yOf, ratio);
-      _drawLabels(ctx, temps, labels, xOf, yOf, unit, ratio);
+      const colors = _getColors();
+      _drawGrid(ctx, W, H, minT, maxT, unit, colors);
+      _drawGradient(ctx, temps, xOf, yOf, plotH, ratio, colors);
+      _drawLine(ctx, temps, xOf, yOf, ratio, colors);
+      _drawLabels(ctx, temps, labels, xOf, yOf, unit, ratio, colors);
 
       if (progress < STEPS) _animFrame = requestAnimationFrame(frame);
     }
@@ -76,8 +87,8 @@ const Chart = (() => {
   }
 
   /** Vẽ lưới nền và trục */
-  function _drawGrid(ctx, W, H, minT, maxT, unit) {
-    ctx.strokeStyle = COLORS.grid;
+  function _drawGrid(ctx, W, H, minT, maxT, unit, colors) {
+    ctx.strokeStyle = colors.grid;
     ctx.lineWidth   = 1;
     const steps = 4;
     for (let i = 0; i <= steps; i++) {
@@ -89,7 +100,7 @@ const Chart = (() => {
 
       // Nhãn trục Y
       const val = Math.round(maxT - (i / steps) * (maxT - minT));
-      ctx.fillStyle  = COLORS.subText;
+      ctx.fillStyle  = colors.subText;
       ctx.font       = "11px Calibri, sans-serif";
       ctx.textAlign  = "right";
       ctx.fillText(`${val}°${unit}`, PADDING.left - 8, y + 4);
@@ -97,11 +108,11 @@ const Chart = (() => {
   }
 
   /** Vẽ gradient phía dưới đường biểu đồ */
-  function _drawGradient(ctx, temps, xOf, yOf, plotH, ratio) {
+  function _drawGradient(ctx, temps, xOf, yOf, plotH, ratio, colors) {
     const endIdx = Math.max(1, Math.floor((temps.length - 1) * ratio));
     const grad   = ctx.createLinearGradient(0, PADDING.top, 0, PADDING.top + plotH);
-    grad.addColorStop(0, COLORS.gradientTop);
-    grad.addColorStop(1, COLORS.gradientBot);
+    grad.addColorStop(0, colors.gradientTop);
+    grad.addColorStop(1, colors.gradientBot);
 
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -114,9 +125,9 @@ const Chart = (() => {
   }
 
   /** Vẽ đường line chính */
-  function _drawLine(ctx, temps, xOf, yOf, ratio) {
+  function _drawLine(ctx, temps, xOf, yOf, ratio, colors) {
     const endIdx = Math.max(1, Math.floor((temps.length - 1) * ratio));
-    ctx.strokeStyle = COLORS.line;
+    ctx.strokeStyle = colors.line;
     ctx.lineWidth   = 2.5;
     ctx.lineJoin    = "round";
     ctx.beginPath();
@@ -126,7 +137,7 @@ const Chart = (() => {
   }
 
   /** Vẽ điểm tròn, nhãn nhiệt độ và ngày */
-  function _drawLabels(ctx, temps, labels, xOf, yOf, unit, ratio) {
+  function _drawLabels(ctx, temps, labels, xOf, yOf, unit, ratio, colors) {
     const endIdx = Math.floor((temps.length - 1) * ratio);
     for (let i = 0; i <= endIdx; i++) {
       const x = xOf(i), y = yOf(temps[i]);
@@ -134,20 +145,20 @@ const Chart = (() => {
       // Hình tròn
       ctx.beginPath();
       ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.fillStyle   = COLORS.point;
+      ctx.fillStyle   = colors.point;
       ctx.fill();
       ctx.strokeStyle = "#fff";
       ctx.lineWidth   = 2;
       ctx.stroke();
 
       // Nhiệt độ bên trên điểm
-      ctx.fillStyle  = COLORS.text;
+      ctx.fillStyle  = colors.text;
       ctx.font       = "bold 12px Calibri, sans-serif";
       ctx.textAlign  = "center";
       ctx.fillText(`${temps[i]}°${unit}`, x, y - 12);
 
       // Ngày bên dưới trục
-      ctx.fillStyle = COLORS.subText;
+      ctx.fillStyle = colors.subText;
       ctx.font      = "12px Calibri, sans-serif";
       ctx.fillText(labels[i], x, yOf(Math.min(...temps)) + 40);
     }
