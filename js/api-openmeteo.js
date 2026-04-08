@@ -28,6 +28,10 @@ const OpenMeteoApi = (() => {
   }
 
   async function getAdvancedMetrics(lat, lon) {
+    const url = `${BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=uv_index,precipitation_probability,visibility,cloud_cover&daily=uv_index_max,precipitation_sum&current=uv_index,precipitation,rain,showers,snowfall,weather_code,cloud_cover,visibility&timezone=auto&forecast_days=5`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Open-Meteo error");
+    return res.json();
     const cached = _getCached(lat, lon);
     if (cached) return cached;
     const url = `${BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=uv_index,apparent_temperature,precipitation_probability,windspeed_10m,winddirection_10m,visibility,cloudcover&daily=uv_index_max,precipitation_sum,windspeed_10m_max&timezone=auto&forecast_days=5`;
