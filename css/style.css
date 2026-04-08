@@ -239,5 +239,65 @@ body {
 }
 #temp-chart { display: block; width: 100%; }
 
+/* ── Map Layer Toggle Buttons ─────────────────────────────────── */
+.map-layer-btn {
+  padding: 0.3rem 0.85rem;
+  border-radius: 9999px;
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.map-layer-btn:hover {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+.map-layer-btn.active {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(29,78,216,0.25);
+}
+
+/* ── Map Legend ────────────────────────────────────────────────── */
+#map-legend {
+  margin-top: 0.65rem;
+  padding: 0.6rem 0.9rem 0.55rem;
+  border-radius: 0.75rem;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+#legend-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+#legend-bar {
+  height: 13px;
+  border-radius: 999px;
+  width: 100%;
+  border: 1px solid rgba(0,0,0,0.09);
+}
+#legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+}
+#legend-labels span {
+  font-size: 0.66rem;
+  color: #64748b;
+  line-height: 1;
+}
+
 /* ── Utility ──────────────────────────────────────────────────── */
 .hidden { display: none !important; }
