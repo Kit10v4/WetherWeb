@@ -8,18 +8,43 @@ const Api = (() => {
     return unit === "F" ? "imperial" : "metric";
   }
 
+  function _buildError(message, status, code) {
+    const err = new Error(message);
+    err.status = status;
+    err.code = code || String(status || "unknown");
+    return err;
+  }
+
   /**
    * Hàm fetch nội bộ — xử lý lỗi HTTP tập trung
    * @param {string} url
-   * @returns {Promise<object>}
+    * @returns {Promise<object>}
    */
-  async function _fetch(url) {
-    const res = await fetch(url);
-    if (!res.ok) {
-      // Ném lỗi kèm status code để ui xử lý thông báo phù hợp
-      throw new Error(String(res.status));
+  async function _fetch(url, timeoutMs = 12000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (!res.ok) {
+        const message = data?.error || data?.message || `Lỗi ${res.status}`;
+        throw _buildError(message, res.status, String(res.status));
+      }
+      return data;
+    } catch (err) {
+      if (err.name === "AbortError") {
+        throw _buildError("Yêu cầu quá thời gian chờ", 0, "timeout");
+      }
+      if (err.status || err.code) throw err;
+      throw _buildError("Không thể kết nối máy chủ", 0, "network");
+    } finally {
+      clearTimeout(timer);
     }
-    return res.json();
   }
 
   /**

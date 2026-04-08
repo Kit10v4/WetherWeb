@@ -11,31 +11,32 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header id="app-header">
+  <header id="app-header" role="banner">
     <a href="#" class="logo">⛅ WeatherWeb</a>
 
     <div id="search-wrapper">
       <input
         id="search-input"
         type="text"
+        aria-label="Tìm kiếm thành phố"
         placeholder="Tìm thành phố... (VD: Hà Nội, Bangkok)"
         autocomplete="off"
         spellcheck="false"
       />
-      <button id="btn-search" title="Tìm kiếm">
+      <button id="btn-search" title="Tìm kiếm" aria-label="Tìm kiếm thời tiết">
         <span id="search-icon">🔍</span>
         <span id="search-spinner" class="spinner hidden"></span>
       </button>
-      <button id="btn-location" title="Vị trí của tôi">📍</button>
-      <div id="history-dropdown" class="hidden"></div>
+      <button id="btn-location" title="Vị trí của tôi" aria-label="Dùng vị trí hiện tại">📍</button>
+      <div id="history-dropdown" class="hidden" role="listbox" aria-label="Gợi ý thành phố"></div>
     </div>
 
     <div class="header-controls">
       <div class="unit-toggle">
-        <button id="btn-unit-c" class="unit-btn unit-active">°C</button>
-        <button id="btn-unit-f" class="unit-btn">°F</button>
+        <button id="btn-unit-c" class="unit-btn unit-active" aria-label="Đổi sang độ C">°C</button>
+        <button id="btn-unit-f" class="unit-btn" aria-label="Đổi sang độ F">°F</button>
       </div>
-      <button id="btn-theme" title="Đổi giao diện">
+      <button id="btn-theme" title="Đổi giao diện" aria-label="Đổi giao diện sáng tối">
         <span id="theme-icon">☀️</span>
       </button>
     </div>
@@ -43,12 +44,12 @@
 
   <div id="weather-map"></div>
 
-  <div id="layer-picker">
-    <button class="map-layer-btn active" data-layer="precipitation_new">🌧 Mưa</button>
-    <button class="map-layer-btn" data-layer="clouds_new">☁️ Mây</button>
-    <button class="map-layer-btn" data-layer="temp_new">🌡 Nhiệt độ</button>
-    <button class="map-layer-btn" data-layer="wind_new">💨 Gió</button>
-    <button class="map-layer-btn" data-layer="pressure_new">📊 Áp suất</button>
+  <div id="layer-picker" role="toolbar" aria-label="Lớp bản đồ thời tiết">
+    <button class="map-layer-btn active" data-layer="precipitation_new" aria-label="Lớp mưa">🌧 Mưa</button>
+    <button class="map-layer-btn" data-layer="clouds_new" aria-label="Lớp mây">☁️ Mây</button>
+    <button class="map-layer-btn" data-layer="temp_new" aria-label="Lớp nhiệt độ">🌡 Nhiệt độ</button>
+    <button class="map-layer-btn" data-layer="wind_new" aria-label="Lớp gió">💨 Gió</button>
+    <button class="map-layer-btn" data-layer="pressure_new" aria-label="Lớp áp suất">📊 Áp suất</button>
   </div>
 
   <div id="toast" class="toast" role="alert" aria-live="polite">

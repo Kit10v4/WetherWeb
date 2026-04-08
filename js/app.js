@@ -2,6 +2,7 @@ const App = (() => {
   let currentUnit = "C";
   let lastWeatherData = null;
   let lastForecastData = null;
+  let _activeRequestId = 0;
 
   function init() {
     currentUnit = Storage.getUnit();
@@ -28,16 +29,29 @@ const App = (() => {
     Components.hideHistoryDropdown();
     Components.showLoading();
     Timeline.destroy();
+    const requestId = ++_activeRequestId;
     try {
-      const [weatherData, forecastData] = await Promise.all([
-        Api.getCurrentWeather(apiCity, currentUnit),
-        Api.getForecast(apiCity, currentUnit),
-      ]);
+      const cacheKey = `${apiCity.toLowerCase()}_${currentUnit}`;
+      const cached = Storage.getCachedWeather(cacheKey);
+      let weatherData;
+      let forecastData;
+      if (cached) {
+        weatherData = cached.weather;
+        forecastData = cached.forecast;
+      } else {
+        [weatherData, forecastData] = await Promise.all([
+          Api.getCurrentWeather(apiCity, currentUnit),
+          Api.getForecast(apiCity, currentUnit),
+        ]);
+        Storage.setCachedWeather(cacheKey, { weather: weatherData, forecast: forecastData });
+      }
+      if (requestId !== _activeRequestId) return;
       _onDataLoaded(weatherData, forecastData, city);
     } catch (err) {
+      if (requestId !== _activeRequestId) return;
       _handleError(err);
     } finally {
-      Components.hideLoading();
+      if (requestId === _activeRequestId) Components.hideLoading();
     }
   }
 
@@ -48,16 +62,29 @@ const App = (() => {
     }
     Components.showLoading();
     Timeline.destroy();
+    const requestId = ++_activeRequestId;
     try {
-      const [weatherData, forecastData] = await Promise.all([
-        Api.getWeatherByCoords(lat, lon, currentUnit),
-        Api.getForecastByCoords(lat, lon, currentUnit),
-      ]);
+      const coordKey = `${Number(lat).toFixed(3)}_${Number(lon).toFixed(3)}_${currentUnit}`;
+      const cached = Storage.getCachedWeather(coordKey);
+      let weatherData;
+      let forecastData;
+      if (cached) {
+        weatherData = cached.weather;
+        forecastData = cached.forecast;
+      } else {
+        [weatherData, forecastData] = await Promise.all([
+          Api.getWeatherByCoords(lat, lon, currentUnit),
+          Api.getForecastByCoords(lat, lon, currentUnit),
+        ]);
+        Storage.setCachedWeather(coordKey, { weather: weatherData, forecast: forecastData });
+      }
+      if (requestId !== _activeRequestId) return;
       _onDataLoaded(weatherData, forecastData, name || weatherData.name);
     } catch (err) {
+      if (requestId !== _activeRequestId) return;
       _handleError(err);
     } finally {
-      Components.hideLoading();
+      if (requestId === _activeRequestId) Components.hideLoading();
     }
   }
 
@@ -79,12 +106,19 @@ const App = (() => {
   }
 
   function _handleError(err) {
-    const code = err.message;
-    const isNetwork = !navigator.onLine || err.name === "TypeError";
-    Components.showToast(
-      isNetwork ? "Lỗi kết nối — Kiểm tra internet" : code === "404" ? "Không tìm thấy thành phố" : `Lỗi ${code}`,
-      "error"
-    );
+    const code = err.code || String(err.status || err.message || "");
+    const isNetwork = !navigator.onLine || code === "network";
+    const isTimeout = code === "timeout";
+    const message = isNetwork
+      ? "Mất kết nối internet. Vui lòng kiểm tra mạng."
+      : isTimeout
+        ? "Kết nối chậm. Vui lòng thử lại."
+        : code === "404"
+          ? "Không tìm thấy thành phố."
+          : code === "429"
+            ? "Đang có nhiều yêu cầu. Vui lòng thử lại sau."
+            : "Không thể tải dữ liệu thời tiết.";
+    Components.showToast(message, "error");
   }
 
   function _toggleUnit() {

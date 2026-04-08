@@ -1,8 +1,18 @@
 const SearchAutocomplete = (() => {
   let _debounceTimer = null;
+  let _results = [];
+  let _activeIndex = -1;
+  let _inputEl = null;
+  let _onSelectCb = null;
 
   function init(inputEl, onSelect) {
     if (!inputEl) return;
+    _inputEl = inputEl;
+    _onSelectCb = onSelect;
+    inputEl.setAttribute("role", "combobox");
+    inputEl.setAttribute("aria-autocomplete", "list");
+    inputEl.setAttribute("aria-expanded", "false");
+    inputEl.setAttribute("aria-controls", "history-dropdown");
     inputEl.addEventListener("input", () => {
       clearTimeout(_debounceTimer);
       const q = inputEl.value.trim();
@@ -12,6 +22,7 @@ const SearchAutocomplete = (() => {
       }
       _debounceTimer = setTimeout(() => _fetchSuggestions(q, onSelect), 300);
     });
+    inputEl.addEventListener("keydown", _onKeyDown);
   }
 
   async function _fetchSuggestions(q, onSelect) {
@@ -22,6 +33,8 @@ const SearchAutocomplete = (() => {
         return;
       }
       const data = await res.json();
+      _results = data;
+      _activeIndex = -1;
       _renderDropdown(data, onSelect);
     } catch {
       _hideDropdown();
@@ -36,7 +49,7 @@ const SearchAutocomplete = (() => {
     }
 
     dropdown.innerHTML = results.map(r => `
-      <div class="autocomplete-item history-item" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${r.name}">
+      <div class="autocomplete-item history-item" role="option" tabindex="-1" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${r.name}">
         <span class="ac-flag">${_getFlagEmoji(r.country)}</span>
         <div class="ac-info">
           <span class="ac-name">${r.name}</span>
@@ -47,15 +60,56 @@ const SearchAutocomplete = (() => {
 
     dropdown.querySelectorAll(".autocomplete-item").forEach(el => {
       el.addEventListener("click", () => {
-        onSelect({
-          name: el.dataset.name,
-          lat: parseFloat(el.dataset.lat),
-          lon: parseFloat(el.dataset.lon),
-        });
+        _selectByElement(el, onSelect);
         _hideDropdown();
       });
     });
     dropdown.classList.remove("hidden");
+    dropdown.setAttribute("role", "listbox");
+    _inputEl?.setAttribute("aria-expanded", "true");
+  }
+
+  function _selectByElement(el, onSelect) {
+    onSelect({
+      name: el.dataset.name,
+      lat: parseFloat(el.dataset.lat),
+      lon: parseFloat(el.dataset.lon),
+    });
+  }
+
+  function _onKeyDown(e) {
+    const dropdown = document.getElementById("history-dropdown");
+    const items = dropdown?.querySelectorAll(".autocomplete-item");
+    if (!items || items.length === 0 || dropdown.classList.contains("hidden")) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      _activeIndex = (_activeIndex + 1) % items.length;
+      _updateActive(items);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      _activeIndex = _activeIndex <= 0 ? items.length - 1 : _activeIndex - 1;
+      _updateActive(items);
+      return;
+    }
+    if (e.key === "Enter" && _activeIndex >= 0) {
+      e.preventDefault();
+      _selectByElement(items[_activeIndex], _onSelectCb);
+      _hideDropdown();
+      return;
+    }
+    if (e.key === "Escape") {
+      _hideDropdown();
+    }
+  }
+
+  function _updateActive(items) {
+    items.forEach((el, idx) => {
+      el.classList.toggle("is-active", idx === _activeIndex);
+      if (idx === _activeIndex) el.scrollIntoView({ block: "nearest" });
+    });
   }
 
   function _getFlagEmoji(countryCode = "") {
@@ -68,6 +122,8 @@ const SearchAutocomplete = (() => {
 
   function _hideDropdown() {
     document.getElementById("history-dropdown")?.classList.add("hidden");
+    _inputEl?.setAttribute("aria-expanded", "false");
+    _activeIndex = -1;
   }
 
   return { init };

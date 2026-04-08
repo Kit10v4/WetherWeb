@@ -5,6 +5,54 @@ const SidePanel = (() => {
   let _lastWeatherData = null;
   let _lastUnit = "C";
   let _metricsReqToken = 0;
+  let _lastAdvanced = null;
+
+  function _getUvLevel(uv) {
+    if (uv == null || Number.isNaN(uv)) return { level: "Không rõ", color: "muted", icon: "❔", msg: "Chưa có dữ liệu UV" };
+    if (uv <= 2) return { level: "Tốt", color: "good", icon: "🟢", msg: "An toàn cho hoạt động ngoài trời." };
+    if (uv <= 5) return { level: "Trung bình", color: "moderate", icon: "🟡", msg: "Nên bôi kem chống nắng khi ra ngoài lâu." };
+    if (uv <= 7) return { level: "Cao", color: "high", icon: "🟠", msg: "Hạn chế nắng gắt 10h-16h, nên đội mũ." };
+    return { level: "Rất cao", color: "danger", icon: "🔴", msg: "Tránh nắng trực tiếp, ưu tiên ở trong nhà." };
+  }
+
+  function _getAirProxyLevel(visibilityKm, cloudcover) {
+    if (visibilityKm >= 10 && cloudcover < 60) {
+      return { level: "Tốt", color: "good", icon: "🟢", msg: "Không khí tương đối trong lành." };
+    }
+    if (visibilityKm >= 6) {
+      return { level: "Trung bình", color: "moderate", icon: "🟡", msg: "Chấp nhận được, nhóm nhạy cảm nên theo dõi." };
+    }
+    return { level: "Xấu", color: "danger", icon: "🔴", msg: "Tầm nhìn thấp, nên hạn chế vận động ngoài trời." };
+  }
+
+  function _renderAdvancedMetrics(lat, lon) {
+    const target = document.getElementById("sp-advanced-metrics");
+    if (!target) return;
+    target.innerHTML = `<p class="sp-coming-soon">Đang tải dữ liệu UV & Không khí...</p>`;
+    OpenMeteoApi.getAdvancedMetrics(lat, lon)
+      .then(data => {
+        _lastAdvanced = data;
+        const uv = data?.hourly?.uv_index?.[0];
+        const visibilityM = data?.hourly?.visibility?.[0];
+        const cloud = data?.hourly?.cloudcover?.[0] ?? 0;
+        const visibilityKm = visibilityM ? visibilityM / 1000 : 0;
+        const uvState = _getUvLevel(uv);
+        const airState = _getAirProxyLevel(visibilityKm, cloud);
+        target.innerHTML = `
+          <div class="sp-adv-card sp-adv-${uvState.color}">
+            <div class="sp-adv-title">${uvState.icon} UV: <strong>${uv == null ? "--" : uv.toFixed(1)}</strong> · ${uvState.level}</div>
+            <p class="sp-adv-msg">${uvState.msg}</p>
+          </div>
+          <div class="sp-adv-card sp-adv-${airState.color}">
+            <div class="sp-adv-title">${airState.icon} Không khí: <strong>${airState.level}</strong></div>
+            <p class="sp-adv-msg">${airState.msg} (Tầm nhìn: ${visibilityKm ? visibilityKm.toFixed(1) : "--"} km)</p>
+          </div>
+        `;
+      })
+      .catch(() => {
+        target.innerHTML = `<p class="sp-coming-soon">Không tải được UV/Không khí. Vui lòng thử lại.</p>`;
+      });
+  }
 
   function open(weatherData, forecastData, unit) {
     _forecastData = forecastData;
@@ -28,6 +76,7 @@ const SidePanel = (() => {
     setTimeout(() => {
       const daily = Api.filterDailyForecast(forecastData.list);
       Chart.draw("side-chart", daily, unit);
+      _renderAdvancedMetrics(weatherData.coord?.lat, weatherData.coord?.lon);
       WeatherMap.invalidateSize();
       PanelManager.checkFAB();
     }, 350);
@@ -124,6 +173,8 @@ const SidePanel = (() => {
           <div class="sp-env-value" id="sp-air-value">--</div>
           <div class="sp-env-desc" id="sp-air-desc">Đang tải dữ liệu...</div>
         </div>
+      <div class="sp-aqi-placeholder" id="sp-advanced-metrics" aria-live="polite">
+        <p class="sp-coming-soon">📡 Đang tải dữ liệu UV & Không khí...</p>
       </div>
       <div class="sp-collapse-tab">Weather Info</div>
     `;
