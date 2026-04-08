@@ -317,10 +317,10 @@ body {
 
 #side-panel {
   position: fixed;
-  top: 0;
+  top: 56px;
   left: 0;
   width: 340px;
-  height: 100dvh;
+  height: calc(100dvh - 56px);
   z-index: 900;
   background: rgba(10, 20, 32, 0.94);
   backdrop-filter: blur(16px);
