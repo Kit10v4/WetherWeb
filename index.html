@@ -244,19 +244,59 @@
         </div>
       </section>
       <section id="map-section" class="hidden fade-in">
-        <h3 class="text-navy font-semibold text-lg mb-3">🗺 Bản đồ thời tiết</h3>
+        <h3 class="text-navy font-semibold text-lg mb-3">🗺 Bản đồ thời tiết nâng cao</h3>
 
-        <!-- Toggle chọn lớp -->
-        <div class="flex gap-2 mb-3 flex-wrap">
-          <button class="map-layer-btn active" data-layer="precipitation_new">🌧 Mưa</button>
-          <button class="map-layer-btn" data-layer="clouds_new">☁️ Mây</button>
-          <button class="map-layer-btn" data-layer="temp_new">🌡 Nhiệt độ</button>
-          <button class="map-layer-btn" data-layer="wind_new">💨 Gió</button>
-          <button class="map-layer-btn" data-layer="pressure_new">📊 Áp suất</button>
+        <div class="windy-layout">
+          <aside class="windy-panel">
+            <p class="windy-panel-title">Lớp dữ liệu</p>
+            <div class="map-layer-grid">
+              <button class="map-layer-btn active" data-layer="precipitation_new">🌧 Mưa</button>
+              <button class="map-layer-btn" data-layer="clouds_new">☁️ Mây</button>
+              <button class="map-layer-btn" data-layer="temp_new">🌡 Nhiệt độ</button>
+              <button class="map-layer-btn" data-layer="wind_new">💨 Gió</button>
+              <button class="map-layer-btn" data-layer="pressure_new">📊 Áp suất</button>
+            </div>
+
+            <div class="mt-4">
+              <label for="layer-opacity" class="windy-panel-title block mb-2">Độ đậm lớp phủ</label>
+              <input id="layer-opacity" type="range" min="20" max="100" value="65" class="w-full">
+              <p id="layer-opacity-value" class="text-xs text-gray-500 mt-1">65%</p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button id="btn-map-locate" class="map-utility-btn">📍 Đến vị trí tôi</button>
+              <button id="btn-map-fullscreen" class="map-utility-btn">🖥 Toàn màn hình</button>
+            </div>
+
+            <p id="map-layer-legend" class="text-xs text-gray-500 mt-4">
+              Đang hiển thị: Mưa (dữ liệu OpenWeatherMap)
+            </p>
+          </aside>
+
+          <div id="weather-map" class="windy-map"></div>
         </div>
 
-        <div id="weather-map" class="rounded-2xl overflow-hidden shadow-md"
-            style="height: 420px;"></div>
+        <div id="point-forecast-panel" class="point-panel hidden">
+          <div class="point-panel-head">
+            <div>
+              <p id="point-location" class="font-semibold text-navy"></p>
+              <p id="point-summary" class="text-sm text-gray-500"></p>
+            </div>
+            <button id="point-play" class="map-utility-btn">▶ Phát timeline</button>
+          </div>
+
+          <div class="mt-3">
+            <input id="point-time-slider" type="range" min="0" max="0" value="0" class="w-full">
+            <p id="point-time-label" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+
+          <div class="point-metrics mt-4">
+            <div class="point-metric"><span>Nhiệt độ</span><strong id="point-temp">--</strong></div>
+            <div class="point-metric"><span>Mưa</span><strong id="point-rain">--</strong></div>
+            <div class="point-metric"><span>Gió</span><strong id="point-wind">--</strong></div>
+            <div class="point-metric"><span>Độ ẩm</span><strong id="point-humidity">--</strong></div>
+          </div>
+        </div>
       </section>
     </div>
     <!-- ── End result-section ──────────────────────────────────── -->

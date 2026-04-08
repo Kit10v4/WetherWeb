@@ -25,7 +25,7 @@ const Api = (() => {
    * @returns {Promise<object>} - WeatherData object
    */
   async function getCurrentWeather(city) {
-    const url = `${CONFIG.BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${CONFIG.API_KEY}&units=metric&lang=vi`;
+    const url = `/api/current?city=${encodeURIComponent(city)}`;
     return _fetch(url);
   }
 
@@ -35,7 +35,7 @@ const Api = (() => {
    * @returns {Promise<object>} - ForecastData object
    */
   async function getForecast(city) {
-    const url = `${CONFIG.BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${CONFIG.API_KEY}&units=metric&cnt=40`;
+    const url = `/api/forecast?city=${encodeURIComponent(city)}`;
     return _fetch(url);
   }
 
@@ -46,7 +46,7 @@ const Api = (() => {
    * @returns {Promise<object>}
    */
   async function getWeatherByCoords(lat, lon) {
-    const url = `${CONFIG.BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${CONFIG.API_KEY}&units=metric&lang=vi`;
+    const url = `/api/current?lat=${lat}&lon=${lon}`;
     return _fetch(url);
   }
 
@@ -57,7 +57,7 @@ const Api = (() => {
    * @returns {Promise<object>}
    */
   async function getForecastByCoords(lat, lon) {
-    const url = `${CONFIG.BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${CONFIG.API_KEY}&units=metric&cnt=40`;
+    const url = `/api/forecast?lat=${lat}&lon=${lon}`;
     return _fetch(url);
   }
 

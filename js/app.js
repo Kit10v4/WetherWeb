@@ -152,6 +152,7 @@ const App = (() => {
     _applyUnitToggleUI(currentUnit);
     CurrentUI.updateUnit(currentUnit);
     ForecastUI.updateUnit(currentUnit);
+    window.dispatchEvent(new CustomEvent("unit:changed", { detail: { unit: currentUnit } }));
   }
 
   function _applyUnitToggleUI(unit) {
