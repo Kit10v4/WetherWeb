@@ -22,7 +22,6 @@ const WeatherMap = (() => {
     _addWeatherLayer(_currentLayer);
     _bindLayerButtons();
     _bindMapClick();
-    RadarLayer.init(_map);
   }
 
   function _bindLayerButtons() {

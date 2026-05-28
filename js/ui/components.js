@@ -55,29 +55,6 @@ const Components = (() => {
     if (icon)    icon.classList.remove("hidden");
   }
 
-  // ── Search Input Validation ────────────────────────────────────
-
-  /**
-   * Hiện thông báo lỗi validation dưới ô input
-   * @param {string} message
-   */
-  function showInputError(message) {
-    const el = document.getElementById("search-error");
-    if (!el) return;
-    el.textContent = message;
-    el.classList.remove("hidden");
-  }
-
-  /**
-   * Xóa thông báo lỗi validation
-   */
-  function clearInputError() {
-    const el = document.getElementById("search-error");
-    if (!el) return;
-    el.textContent = "";
-    el.classList.add("hidden");
-  }
-
   // ── History Dropdown ───────────────────────────────────────────
 
   /**
@@ -98,13 +75,16 @@ const Components = (() => {
       return;
     }
 
-    const items = history.map(city => `
+    const items = history.map(city => {
+      const safe = Utils.escapeHtml(city);
+      return `
       <div class="history-item">
-        <span class="history-city" data-city="${city}">
-          <span class="history-icon">🕐</span> ${city}
+        <span class="history-city" data-city="${safe}">
+          <span class="history-icon">🕐</span> ${safe}
         </span>
-        <button class="history-remove" data-city="${city}" title="Xóa">✕</button>
-      </div>`).join("");
+        <button class="history-remove" data-city="${safe}" title="Xóa">✕</button>
+      </div>`;
+    }).join("");
 
     dropdown.innerHTML = `
       ${items}
@@ -144,42 +124,11 @@ const Components = (() => {
     if (dropdown) dropdown.classList.add("hidden");
   }
 
-  // ── Error State (toàn màn hình kết quả) ───────────────────────
-
-  /**
-   * Hiện thông báo lỗi lớn trong khu vực kết quả
-   * @param {string} statusCode - '404', '401', 'network', ...
-   */
-  function showResultError(statusCode) {
-    const section = document.getElementById("result-section");
-    if (!section) return;
-
-    const messages = {
-      "404":     { icon: "🔍", title: "Không tìm thấy thành phố", sub: "Kiểm tra lại chính tả hoặc thử tên tiếng Anh (VD: Ho Chi Minh City)" },
-      "401":     { icon: "🔑", title: "API key không hợp lệ",     sub: "Kiểm tra biến môi trường OWM_API_KEY trên Vercel." },
-      "429":     { icon: "⏱",  title: "Quá nhiều yêu cầu",        sub: "Vui lòng chờ vài phút rồi thử lại" },
-      "network": { icon: "📡", title: "Lỗi kết nối mạng",         sub: "Kiểm tra kết nối internet của bạn rồi thử lại" },
-      "default": { icon: "⚠️", title: "Đã xảy ra lỗi",            sub: "Vui lòng thử lại sau ít phút" },
-    };
-
-    const m = messages[statusCode] || messages["default"];
-    section.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="text-6xl mb-4">${m.icon}</div>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">${m.title}</h3>
-        <p class="text-gray-400 text-sm max-w-xs">${m.sub}</p>
-      </div>`;
-    section.classList.remove("hidden");
-  }
-
   return {
     showToast,
     showLoading,
     hideLoading,
-    showInputError,
-    clearInputError,
     renderHistoryDropdown,
     hideHistoryDropdown,
-    showResultError,
   };
 })();

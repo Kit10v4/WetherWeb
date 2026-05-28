@@ -82,7 +82,7 @@ const Storage = (() => {
    * @returns {'light'|'dark'}
    */
   function getTheme() {
-    return localStorage.getItem(KEYS.THEME) || "light";
+    return localStorage.getItem(KEYS.THEME) || "dark";
   }
 
   /**

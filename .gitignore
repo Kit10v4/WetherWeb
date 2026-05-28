@@ -1,5 +1,6 @@
-# ⚠️ QUAN TRỌNG: Không commit API key lên GitHub
-config.js
+# Env / secrets
+.env
+.env.local
 
 # Editor
 .vscode/

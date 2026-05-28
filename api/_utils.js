@@ -50,3 +50,11 @@ export function validCoord(value, min, max) {
   const n = Number(value);
   return Number.isFinite(n) && n >= min && n <= max;
 }
+
+export function normUnits(value) {
+  return value === "imperial" ? "imperial" : "metric";
+}
+
+export function normLang(value) {
+  return /^[a-z]{2}$/i.test(String(value || "")) ? String(value).toLowerCase() : "vi";
+}

@@ -26,9 +26,10 @@ weatherpro/
 |   |-- api-openmeteo.js
 |   |-- map.js
 |   |-- layers/
-|   |   |-- wind-layer.js
-|   |   `-- radar.js
+|   |   `-- wind-layer.js
 |   `-- ui/
+|       |-- components.js
+|       |-- panel-manager.js
 |       |-- side-panel.js
 |       |-- timeline.js
 |       `-- search-autocomplete.js

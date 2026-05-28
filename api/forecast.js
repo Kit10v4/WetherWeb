@@ -1,4 +1,4 @@
-import { checkRateLimit, handlePreflight, hasOwmKey, requireGet, setCors } from "./_utils.js";
+import { checkRateLimit, handlePreflight, hasOwmKey, normLang, normUnits, requireGet, setCors } from "./_utils.js";
 
 export default async function handler(req, res) {
   setCors(res);
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (!hasOwmKey(res)) return;
 
   try {
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${process.env.OWM_API_KEY}&units=${units}&lang=${lang}&cnt=40`;
+    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${process.env.OWM_API_KEY}&units=${normUnits(units)}&lang=${normLang(lang)}&cnt=40`;
     const owmRes = await fetch(url);
     const data = await owmRes.json();
 

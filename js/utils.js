@@ -41,17 +41,6 @@ const Utils = (() => {
   }
 
   /**
-   * Format Unix timestamp thành ngày/tháng/năm
-   * @param {number} unixTs
-   * @returns {string}
-   */
-  function formatDate(unixTs) {
-    return new Date(unixTs * 1000).toLocaleDateString("vi-VN", {
-      day: "2-digit", month: "2-digit", year: "numeric"
-    });
-  }
-
-  /**
    * Lấy tên ngày trong tuần viết tắt (T2, T3 ... CN)
    * @param {string|number} dateInput - chuỗi ISO hoặc Unix timestamp (giây)
    * @returns {string}
@@ -64,29 +53,7 @@ const Utils = (() => {
     return days[date.getDay()];
   }
 
-  /**
-   * Lấy ngày giờ hiện tại định dạng tiếng Việt
-   * @returns {string}
-   */
-  function getCurrentDateTime() {
-    return new Date().toLocaleString("vi-VN", {
-      weekday: "long", day: "2-digit", month: "2-digit",
-      year: "numeric", hour: "2-digit", minute: "2-digit"
-    });
-  }
-
   // --- Gió ---
-
-  /**
-   * Chuyển độ góc sang hướng gió (N, NE, E, SE, S, SW, W, NW)
-   * @param {number} deg
-   * @returns {string}
-   */
-  function getWindDirection(deg) {
-    const dirs = ["Bắc", "Đông Bắc", "Đông", "Đông Nam",
-                  "Nam", "Tây Nam", "Tây", "Tây Bắc"];
-    return dirs[Math.round(deg / 45) % 8];
-  }
 
   /**
    * Chuyển m/s sang km/h
@@ -135,6 +102,21 @@ const Utils = (() => {
   function capitalize(str) {
     return str.replace(/\b\w/g, c => c.toUpperCase());
   }
+
+  /**
+   * Escape ký tự HTML để chèn an toàn vào innerHTML / thuộc tính
+   * @param {string} str
+   * @returns {string}
+   */
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[c]);
+  }
   /**
  * Chuyển tên thành phố tiếng Việt → tên API nhận được
  * Nếu không có trong bảng mapping thì giữ nguyên
@@ -149,14 +131,12 @@ function resolveCity(city) {
     celsiusToFahrenheit,
     formatTemp,
     formatTime,
-    formatDate,
     getDayName,
-    getCurrentDateTime,
-    getWindDirection,
     msToKmh,
     debounce,
     formatVisibility,
     capitalize,
+    escapeHtml,
     resolveCity,
   };
 })();

@@ -51,15 +51,20 @@ const SearchAutocomplete = (() => {
       return;
     }
 
-    dropdown.innerHTML = results.map(r => `
-      <div class="autocomplete-item history-item" role="option" tabindex="-1" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${r.name}">
+    dropdown.innerHTML = results.map(r => {
+      const name = Utils.escapeHtml(r.name);
+      const state = Utils.escapeHtml(r.state);
+      const country = Utils.escapeHtml(r.country);
+      return `
+      <div class="autocomplete-item history-item" role="option" tabindex="-1" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${name}">
         <span class="ac-flag">${_getFlagEmoji(r.country)}</span>
         <div class="ac-info">
-          <span class="ac-name">${r.name}</span>
-          <span class="ac-country">${r.state ? `${r.state}, ` : ""}${r.country}</span>
+          <span class="ac-name">${name}</span>
+          <span class="ac-country">${r.state ? `${state}, ` : ""}${country}</span>
         </div>
       </div>
-    `).join("");
+    `;
+    }).join("");
 
     dropdown.querySelectorAll(".autocomplete-item").forEach(el => {
       el.addEventListener("click", () => {
